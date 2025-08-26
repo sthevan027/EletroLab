@@ -1,0 +1,163 @@
+📌 Planejamento EletriLab
+🎯 Objetivo
+
+Criar um sistema 100% client-side para geração e gestão de relatórios elétricos (Megger e Hipot), com:
+
+geração aleatória ou manual de valores,
+
+classificação automática (BOM, ACEITÁVEL, REPROVADO),
+
+histórico local (IndexedDB),
+
+exportação (PDF/CSV),
+
+dashboard com estatísticas.
+
+🛠️ Stack
+
+Frontend: React + Vite + TypeScript + Tailwind (dark theme).
+
+Roteamento: React Router.
+
+Banco local: IndexedDB (Dexie.js).
+
+Fallback: localStorage.
+
+Exportações:
+
+PDF → html2pdf.js ou jsPDF,
+
+CSV → export nativo.
+
+Gráficos: Chart.js.
+
+PWA (opcional): suporte offline, manifest e service worker.
+
+📂 Estrutura de Pastas
+eletrilab/
+ ├─ src/
+ │   ├─ assets/             # Logos, ícones
+ │   ├─ components/         # Botões, Cards, Inputs, Gráficos
+ │   ├─ db/                 # Configuração do Dexie (IndexedDB)
+ │   ├─ hooks/              # useDexie, useLocalStorage
+ │   ├─ pages/              # Dashboard, NovoRelatorio, DetalheRelatorio, Equipamentos, Parametros
+ │   ├─ types/              # Tipos TS (Equipment, Report, Test)
+ │   ├─ utils/              # Funções (geração aleatória, export PDF/CSV)
+ │   ├─ App.tsx             # Roteamento
+ │   └─ main.tsx            # Entry point
+ ├─ public/
+ │   ├─ manifest.json       # PWA config
+ │   └─ icons/              # PWA icons
+ ├─ package.json
+ ├─ vite.config.ts
+ └─ tsconfig.json
+
+🧩 Modelagem (IndexedDB via Dexie)
+
+equipment
+
+id, category, tag, serialNumber?, inServiceTime?, createdAt
+
+
+report
+
+id, number, client?, site?, operator?, date, notes?, tests[], status
+
+
+test
+
+id, reportId, equipmentId, testType, mode?, kv, duration, value, unit, result
+
+
+limits (JSON local editável)
+
+{
+  "megger": { "motor": { "min": 50, "good": 500, "units": "MΩ" } },
+  "hipot_ac": { "cabo": { "max": 5, "good": 2, "units": "mA" } }
+}
+
+📊 UX / Fluxo de Telas
+
+Dashboard
+
+KPIs: nº relatórios, % bom/aceitável/reprovado.
+
+Gráficos (Chart.js): pizza por resultado, barras por categoria, linha por tempo.
+
+Botão “Novo Relatório”.
+
+Novo Relatório
+
+Formulário: cliente, site, operador, data.
+
+Selecionar/adicionar equipamento.
+
+Selecionar tipo de teste (Megger/Hipot).
+
+Botão Gerar Valor Aleatório.
+
+Resultado calculado na hora.
+
+Salvar relatório.
+
+Detalhe Relatório
+
+Lista de testes.
+
+Exportar PDF/CSV.
+
+Equipamentos
+
+CRUD de equipamentos.
+
+Campo tempo de uso.
+
+Parâmetros/Limites
+
+Editar thresholds (min, max, good).
+
+Salvar em JSON local.
+
+⚡ Lógica de Geração Aleatória
+
+Megger (MΩ):
+
+60% valores > good → BOM
+
+25% entre min e good → ACEITÁVEL
+
+15% abaixo min → REPROVADO
+
+Hipot (mA):
+
+60% <= good → BOM
+
+25% entre good e max → ACEITÁVEL
+
+15% > max → REPROVADO
+
+⏱️ Cronograma
+
+Semana 1: setup projeto, Dexie schema, página Dashboard.
+
+Semana 2: Novo Relatório + geração aleatória + salvar histórico.
+
+Semana 3: Export PDF/CSV + gráficos + Equipamentos.
+
+Semana 4: Parâmetros editáveis + refinamento visual + PWA.
+
+MVP funcional em 3–4 semanas.
+
+📑 Documentação
+
+Na pasta /docs/:
+
+README.md → visão geral + setup.
+
+data-model.md → schema IndexedDB + JSON limits.
+
+validation-rules.md → regras de classificação.
+
+ux-spec.md → telas + fluxo de usuário.
+
+test-plan.md → cenários de teste (gerar, salvar, exportar).
