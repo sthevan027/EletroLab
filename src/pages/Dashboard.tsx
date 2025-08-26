@@ -275,12 +275,13 @@ export default function Dashboard() {
           Ações Rápidas
         </h3>
         <div className="flex flex-wrap gap-4">
-          <Link
-            to="/new-report"
-            className="btn-primary"
-          >
+          <Link to="/new-report" className="btn-primary">
             <Plus className="h-5 w-5 mr-2" />
             Novo Relatório
+          </Link>
+          <Link to="/generate" className="btn-secondary">
+            <Plus className="h-5 w-5 mr-2" />
+            Gerar Rápido
           </Link>
           <Link
             to="/equipment"

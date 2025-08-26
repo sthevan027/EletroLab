@@ -1,488 +1,629 @@
-# Plano de Testes - EletriLab
+# Plano de Testes - EletriLab Ultra-MVP
 
 ## 📋 Visão Geral
 
-Este documento define os cenários de teste para o sistema EletriLab, cobrindo funcionalidades de geração de dados, salvamento e exportação de relatórios.
+Este documento define o plano de testes para o EletriLab Ultra-MVP, sistema especializado na geração rápida de relatórios Megger/IR no formato "cupom".
 
 ## 🎯 Objetivos dos Testes
 
-- **Validar** funcionalidades principais do sistema
-- **Garantir** qualidade dos dados gerados
-- **Verificar** integridade do banco de dados
-- **Testar** exportação de relatórios
-- **Validar** regras de classificação
-- **Verificar** responsividade e usabilidade
+### Funcionais
+- **Geração Rápida**: Verificar geração de relatórios sem salvar
+- **Salvamento**: Verificar persistência no IndexedDB
+- **Exportação**: Verificar geração de PDF e CSV
+- **Validações**: Verificar regras de validação flexíveis
+
+### Não Funcionais
+- **Performance**: Geração em < 1 segundo
+- **Usabilidade**: Interface intuitiva e responsiva
+- **Acessibilidade**: Conformidade WCAG 2.1 AA
+- **Compatibilidade**: Funcionamento em diferentes navegadores
 
 ## 🧪 Tipos de Teste
 
 ### 1. Testes Unitários
-- Funções de geração de valores
-- Validações de entrada
-- Regras de classificação
-- Utilitários de exportação
+- **Utilitárias**: Funções de formatação e cálculo
+- **Validações**: Regras de validação de entrada
+- **Geradores**: Lógica de geração de valores
+- **Conversões**: Transformação de dados
 
 ### 2. Testes de Integração
-- Interação com IndexedDB
-- Fluxo de criação de relatórios
-- Exportação de dados
+- **Banco de Dados**: Operações IndexedDB
+- **Exportação**: Geração de PDF/CSV
+- **Navegação**: Roteamento entre páginas
+- **Estado**: Gerenciamento de estado da aplicação
 
-### 3. Testes E2E (End-to-End)
-- Fluxo completo de criação
-- Exportação de relatórios
-- Gestão de equipamentos
+### 3. Testes de Interface
+- **Componentes**: Renderização e interação
+- **Formulários**: Validação e submissão
+- **Responsividade**: Adaptação a diferentes telas
+- **Acessibilidade**: Navegação por teclado e screen readers
 
-### 4. Testes de Performance
-- Geração de múltiplos relatórios
-- Exportação de dados grandes
-- Responsividade da interface
+### 4. Testes End-to-End
+- **Fluxos Completos**: Geração → Preview → Exportação
+- **Modos de Trabalho**: Gerar Rápido vs Novo Relatório
+- **Persistência**: Salvamento e recuperação de dados
+- **Migração**: Conversão de dados antigos
 
 ## 📊 Cenários de Teste
 
-### 🎲 Geração de Dados
-
-#### TC001: Geração de Valores Aleatórios - Megger
-**Objetivo**: Verificar se os valores gerados seguem a distribuição correta
-
-**Pré-condições**:
-- Sistema inicializado
-- Parâmetros configurados para Megger
-
-**Passos**:
-1. Acessar página "Novo Relatório"
-2. Selecionar equipamento tipo "Motor"
-3. Configurar teste Megger
-4. Clicar em "Gerar Valor Aleatório"
-5. Repetir 100 vezes
-6. Analisar distribuição dos resultados
-
-**Resultado Esperado**:
-- 60% dos valores > 500 MΩ (BOM)
-- 25% entre 50-500 MΩ (ACEITÁVEL)
-- 15% < 50 MΩ (REPROVADO)
-- Todos os valores dentro do range válido (0.1 - 10.000 MΩ)
-
-#### TC002: Geração de Valores Aleatórios - Hipot AC
-**Objetivo**: Verificar distribuição para testes Hipot AC
-
-**Pré-condições**:
-- Sistema inicializado
-- Parâmetros configurados para Hipot AC
-
-**Passos**:
-1. Acessar página "Novo Relatório"
-2. Selecionar equipamento tipo "Cabo"
-3. Configurar teste Hipot AC
-4. Clicar em "Gerar Valor Aleatório"
-5. Repetir 100 vezes
-6. Analisar distribuição dos resultados
-
-**Resultado Esperado**:
-- 60% dos valores ≤ 1 mA (BOM)
-- 25% entre 1-5 mA (ACEITÁVEL)
-- 15% > 5 mA (REPROVADO)
-- Todos os valores dentro do range válido (0.01 - 100 mA)
-
-#### TC003: Geração de Valores Aleatórios - Hipot DC
-**Objetivo**: Verificar distribuição para testes Hipot DC
-
-**Pré-condições**:
-- Sistema inicializado
-- Parâmetros configurados para Hipot DC
-
-**Passos**:
-1. Acessar página "Novo Relatório"
-2. Selecionar equipamento tipo "Transformador"
-3. Configurar teste Hipot DC
-4. Clicar em "Gerar Valor Aleatório"
-5. Repetir 100 vezes
-6. Analisar distribuição dos resultados
-
-**Resultado Esperado**:
-- 60% dos valores ≤ 1.5 mA (BOM)
-- 25% entre 1.5-7.5 mA (ACEITÁVEL)
-- 15% > 7.5 mA (REPROVADO)
-- Todos os valores dentro do range válido (0.001 - 50 mA)
-
-#### TC004: Geração de Múltiplos Testes
-**Objetivo**: Verificar geração simultânea de vários testes
-
-**Pré-condições**:
-- Sistema inicializado
-- Múltiplos equipamentos cadastrados
-
-**Passos**:
-1. Acessar página "Novo Relatório"
-2. Selecionar 5 equipamentos diferentes
-3. Configurar testes variados (Megger, Hipot AC, Hipot DC)
-4. Clicar em "Gerar Todos Aleatórios"
-5. Verificar resultados
-
-**Resultado Esperado**:
-- Todos os testes gerados com valores válidos
-- Classificações corretas aplicadas
-- Interface responsiva durante geração
-
-### 💾 Salvamento de Dados
-
-#### TC005: Criação de Relatório Completo
-**Objetivo**: Verificar salvamento de relatório com todos os dados
-
-**Pré-condições**:
-- Sistema inicializado
-- Equipamentos cadastrados
-
-**Passos**:
-1. Acessar "Novo Relatório"
-2. Preencher informações básicas:
-   - Cliente: "Empresa ABC"
-   - Local: "Fábrica XYZ"
-   - Operador: "João Silva"
-   - Data: "15/01/2024"
-   - Observações: "Teste de rotina"
-3. Selecionar 3 equipamentos
-4. Configurar testes variados
-5. Gerar valores aleatórios
-6. Salvar relatório
-
-**Resultado Esperado**:
-- Relatório salvo no IndexedDB
-- Número único gerado automaticamente
-- Todos os dados preservados
-- Status "Concluído"
-- Redirecionamento para Dashboard
-
-#### TC006: Salvamento de Rascunho
-**Objetivo**: Verificar salvamento parcial durante criação
-
-**Pré-condições**:
-- Sistema inicializado
-
-**Passos**:
-1. Acessar "Novo Relatório"
-2. Preencher apenas informações básicas
-3. Clicar em "Salvar Rascunho"
-4. Verificar no Dashboard
-5. Continuar edição posteriormente
-
-**Resultado Esperado**:
-- Rascunho salvo com status "Rascunho"
-- Dados parciais preservados
-- Possibilidade de continuar edição
-- Visível na lista de relatórios
-
-#### TC007: Validação de Dados Obrigatórios
-**Objetivo**: Verificar validação antes do salvamento
-
-**Pré-condições**:
-- Sistema inicializado
-
-**Passos**:
-1. Acessar "Novo Relatório"
-2. Tentar salvar sem preencher dados obrigatórios
-3. Verificar mensagens de erro
-4. Preencher dados obrigatórios
-5. Tentar salvar novamente
-
-**Resultado Esperado**:
-- Validação impede salvamento incompleto
-- Mensagens de erro claras
-- Salvamento bem-sucedido após correção
-
-#### TC008: Concorrência de Salvamento
-**Objetivo**: Verificar comportamento com múltiplos salvamentos
-
-**Pré-condições**:
-- Sistema inicializado
-- Relatório em edição
-
-**Passos**:
-1. Abrir relatório em duas abas
-2. Editar dados em ambas as abas
-3. Salvar em ambas simultaneamente
-4. Verificar integridade dos dados
-
-**Resultado Esperado**:
-- Último salvamento prevalece
-- Dados não corrompidos
-- Feedback adequado ao usuário
-
-### 📤 Exportação de Dados
-
-#### TC009: Exportação PDF - Relatório Simples
-**Objetivo**: Verificar geração de PDF com dados básicos
-
-**Pré-condições**:
-- Relatório criado com dados completos
-
-**Passos**:
-1. Acessar relatório existente
-2. Clicar em "Exportar PDF"
-3. Aguardar geração
-4. Verificar arquivo baixado
-
-**Resultado Esperado**:
-- PDF gerado com layout correto
-- Todos os dados do relatório incluídos
-- Cabeçalho com logo e informações
-- Tabela de testes formatada
-- Rodapé com data e hora
-
-#### TC010: Exportação PDF - Relatório Complexo
-**Objetivo**: Verificar PDF com múltiplos testes e dados extensos
-
-**Pré-condições**:
-- Relatório com 10+ testes
-- Observações longas
-- Múltiplos equipamentos
-
-**Passos**:
-1. Acessar relatório complexo
-2. Clicar em "Exportar PDF"
-3. Verificar paginação
-4. Validar formatação
-
-**Resultado Esperado**:
-- PDF com múltiplas páginas se necessário
-- Formatação consistente
-- Dados completos preservados
-- Tamanho de arquivo razoável (< 5MB)
-
-#### TC011: Exportação CSV - Dados Completos
-**Objetivo**: Verificar exportação CSV com todos os relatórios
-
-**Pré-condições**:
-- Múltiplos relatórios criados
-
-**Passos**:
-1. Acessar Dashboard
-2. Clicar em "Exportar CSV"
-3. Selecionar período (últimos 30 dias)
-4. Baixar arquivo
-
-**Resultado Esperado**:
-- CSV com cabeçalhos corretos
-- Todos os relatórios do período
-- Dados separados por vírgula
-- Encoding UTF-8
-- Compatível com Excel
-
-#### TC012: Exportação CSV - Filtros Aplicados
-**Objetivo**: Verificar exportação com filtros específicos
-
-**Pré-condições**:
-- Relatórios com diferentes clientes e resultados
-
-**Passos**:
-1. Aplicar filtro por cliente
-2. Aplicar filtro por resultado (BOM)
-3. Clicar em "Exportar CSV"
-4. Verificar dados exportados
-
-**Resultado Esperado**:
-- Apenas dados filtrados no CSV
-- Cabeçalhos mantidos
-- Formato consistente
-
-#### TC013: Backup Completo do Sistema
-**Objetivo**: Verificar backup de todos os dados
-
-**Pré-condições**:
-- Sistema com dados de teste
-
-**Passos**:
-1. Acessar "Exportar" no menu
-2. Clicar em "Backup Completo"
-3. Aguardar geração do arquivo JSON
-4. Verificar conteúdo
-
-**Resultado Esperado**:
-- JSON com estrutura completa
-- Todos os equipamentos incluídos
-- Todos os relatórios incluídos
-- Todos os testes incluídos
-- Configurações de limites incluídas
-- Metadata de exportação
-
-#### TC014: Restauração de Backup
-**Objetivo**: Verificar restauração de dados
-
-**Pré-condições**:
-- Backup JSON válido gerado
-
-**Passos**:
-1. Limpar dados do sistema
-2. Acessar "Importar" no menu
-3. Selecionar arquivo de backup
-4. Confirmar restauração
-5. Verificar dados restaurados
-
-**Resultado Esperado**:
-- Todos os dados restaurados
-- Relacionamentos preservados
-- Configurações restauradas
-- Sistema funcional após restauração
-
-### 🔍 Validações Específicas
-
-#### TC015: Validação de Limites de Entrada
-**Objetivo**: Verificar validação de valores de entrada
-
-**Cenários de Teste**:
-- Tensão negativa → Deve rejeitar
-- Tensão > 50 kV → Deve rejeitar
-- Duração = 0 → Deve rejeitar
-- Duração > 60 min → Deve rejeitar
-- Valor Megger < 0.1 MΩ → Deve rejeitar
-- Valor Hipot < 0.001 mA → Deve rejeitar
-
-#### TC016: Validação de Classificação
-**Objetivo**: Verificar regras de classificação
-
-**Cenários de Teste**:
-- Megger 600 MΩ → Deve classificar como BOM
-- Megger 300 MΩ → Deve classificar como ACEITÁVEL
-- Megger 30 MΩ → Deve classificar como REPROVADO
-- Hipot 1.5 mA → Deve classificar como BOM
-- Hipot 3.5 mA → Deve classificar como ACEITÁVEL
-- Hipot 8.0 mA → Deve classificar como REPROVADO
-
-#### TC017: Performance de Geração
-**Objetivo**: Verificar performance com grandes volumes
-
-**Passos**:
-1. Criar 100 relatórios com 5 testes cada
-2. Medir tempo de geração
-3. Verificar responsividade da interface
-4. Testar exportação de todos os dados
-
-**Resultado Esperado**:
-- Geração em < 30 segundos
-- Interface responsiva
-- Exportação em < 60 segundos
-- Sem erros de memória
-
-### 📱 Testes de Interface
-
-#### TC018: Responsividade Mobile
-**Objetivo**: Verificar funcionamento em dispositivos móveis
-
-**Passos**:
-1. Acessar sistema em smartphone
-2. Navegar por todas as páginas
-3. Criar relatório completo
-4. Exportar PDF/CSV
-5. Verificar usabilidade
-
-**Resultado Esperado**:
-- Interface adaptada para mobile
-- Navegação funcional
-- Formulários utilizáveis
-- Exportação funcionando
-
-#### TC019: Navegação por Teclado
-**Objetivo**: Verificar acessibilidade
-
-**Passos**:
-1. Navegar usando apenas teclado
-2. Preencher formulários
-3. Acessar todas as funcionalidades
-4. Verificar feedback visual
-
-**Resultado Esperado**:
-- Navegação completa por teclado
-- Focus visível em todos os elementos
-- Atalhos funcionando
-- Screen reader compatível
-
-## 🛠️ Ferramentas de Teste
-
-### Testes Automatizados
-- **Jest**: Testes unitários
-- **React Testing Library**: Testes de componentes
-- **Cypress**: Testes E2E
-- **Playwright**: Testes de performance
-
-### Testes Manuais
-- **Checklist**: Validação de funcionalidades
-- **Exploratório**: Descoberta de bugs
-- **Usabilidade**: Feedback de usuários
-
-## 📊 Critérios de Aceitação
-
-### Funcionalidade
-- ✅ Todas as funcionalidades principais funcionando
-- ✅ Validações aplicadas corretamente
-- ✅ Exportações gerando arquivos válidos
-- ✅ Dados salvos com integridade
+### Cenário 1: Geração Rápida
+```typescript
+describe('Geração Rápida', () => {
+  test('deve gerar relatório sem salvar', async () => {
+    // 1. Acessar página "Gerar Rápido"
+    await page.goto('/gerar-rapido');
+    
+    // 2. Selecionar categoria
+    await page.selectOption('[data-testid="category-select"]', 'cabo');
+    
+    // 3. Definir tensão
+    await page.fill('[data-testid="kv-input"]', '1.00');
+    
+    // 4. Gerar valores
+    await page.click('[data-testid="generate-button"]');
+    
+    // 5. Verificar preview
+    await expect(page.locator('[data-testid="preview"])).toBeVisible();
+    
+    // 6. Verificar que não foi salvo
+    const savedReports = await getSavedReports();
+    expect(savedReports).toHaveLength(0);
+  });
+});
+```
+
+### Cenário 2: Novo Relatório (Salvar)
+```typescript
+describe('Novo Relatório - Modo Salvar', () => {
+  test('deve salvar relatório no banco', async () => {
+    // 1. Acessar página "Novo Relatório"
+    await page.goto('/novo-relatorio');
+    
+    // 2. Alternar para modo "Salvar"
+    await page.click('[data-testid="save-mode-toggle"]');
+    
+    // 3. Preencher formulário
+    await page.selectOption('[data-testid="category-select"]', 'motor');
+    await page.fill('[data-testid="kv-input"]', '1.00');
+    await page.fill('[data-testid="client-input"]', 'Empresa ABC');
+    
+    // 4. Gerar valores
+    await page.click('[data-testid="generate-button"]');
+    
+    // 5. Salvar relatório
+    await page.click('[data-testid="save-button"]');
+    
+    // 6. Verificar salvamento
+    const savedReports = await getSavedReports();
+    expect(savedReports).toHaveLength(1);
+    expect(savedReports[0].client).toBe('Empresa ABC');
+  });
+});
+```
+
+### Cenário 3: Exportação PDF
+```typescript
+describe('Exportação PDF', () => {
+  test('deve gerar PDF no formato cupom', async () => {
+    // 1. Gerar relatório
+    await generateReport({ category: 'cabo', kv: 1.00 });
+    
+    // 2. Exportar PDF
+    await page.click('[data-testid="export-pdf-button"]');
+    
+    // 3. Verificar download
+    const download = await page.waitForEvent('download');
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+    
+    // 4. Verificar conteúdo
+    const pdfContent = await download.createReadStream();
+    expect(pdfContent).toContain('RELATÓRIO IR');
+    expect(pdfContent).toContain('00:15');
+    expect(pdfContent).toContain('01:00');
+  });
+});
+```
+
+### Cenário 4: Validações Flexíveis
+```typescript
+describe('Validações Flexíveis', () => {
+  test('deve permitir geração com campos opcionais vazios', async () => {
+    // 1. Preencher apenas campos obrigatórios
+    await page.selectOption('[data-testid="category-select"]', 'trafo');
+    await page.fill('[data-testid="kv-input"]', '1.00');
+    
+    // 2. Tentar gerar (deve funcionar)
+    await page.click('[data-testid="generate-button"]');
+    
+    // 3. Verificar que não há erros
+    await expect(page.locator('[data-testid="error-message"])).not.toBeVisible();
+    
+    // 4. Verificar preview
+    await expect(page.locator('[data-testid="preview"])).toBeVisible();
+  });
+});
+```
+
+## 🔧 Testes Unitários
+
+### Utilitárias de Formatação
+```typescript
+describe('formatResistance', () => {
+  test('deve formatar valores em Ω', () => {
+    expect(formatResistance(500)).toBe('500Ω');
+    expect(formatResistance(1234)).toBe('1.23kΩ');
+  });
+  
+  test('deve formatar valores em GΩ', () => {
+    expect(formatResistance(1.5e9)).toBe('1.50GΩ');
+    expect(formatResistance(25e9)).toBe('25.00GΩ');
+  });
+  
+  test('deve retornar OVRG para valores altos', () => {
+    expect(formatResistance(6e12)).toBe('0.99 OVRG');
+    expect(formatResistance(10e12)).toBe('0.99 OVRG');
+  });
+});
+```
+
+### Cálculo do DAI
+```typescript
+describe('calculateDAI', () => {
+  test('deve calcular DAI corretamente', () => {
+    const readings = [
+      { time: '00:15', kv: '1.00', resistance: '1.00GΩ' },
+      { time: '00:30', kv: '1.00', resistance: '1.10GΩ' },
+      { time: '00:45', kv: '1.00', resistance: '1.20GΩ' },
+      { time: '01:00', kv: '1.00', resistance: '1.30GΩ' }
+    ];
+    
+    const dai = calculateDAI(readings);
+    expect(dai).toBe('1.18');
+  });
+  
+  test('deve retornar Undefined com OVRG', () => {
+    const readings = [
+      { time: '00:15', kv: '1.00', resistance: '1.00GΩ' },
+      { time: '00:30', kv: '1.00', resistance: '0.99 OVRG' },
+      { time: '00:45', kv: '1.00', resistance: '1.20GΩ' },
+      { time: '01:00', kv: '1.00', resistance: '1.30GΩ' }
+    ];
+    
+    const dai = calculateDAI(readings);
+    expect(dai).toBe('Undefined');
+  });
+});
+```
+
+### Gerador de Série IR
+```typescript
+describe('gerarSerieIR', () => {
+  test('deve gerar série para cabo', () => {
+    const result = gerarSerieIR({ category: 'cabo', kv: 1.00 });
+    
+    expect(result.readings).toHaveLength(4);
+    expect(result.readings[0].time).toBe('00:15');
+    expect(result.readings[3].time).toBe('01:00');
+    
+    // Verificar que todos os valores são >= 5GΩ
+    result.readings.forEach(reading => {
+      const value = parseResistance(reading.resistance);
+      expect(value).toBeGreaterThanOrEqual(5e9);
+    });
+  });
+  
+  test('deve gerar série para motor', () => {
+    const result = gerarSerieIR({ category: 'motor', kv: 1.00 });
+    
+    expect(result.readings).toHaveLength(4);
+    expect(result.dai).toMatch(/^\d+\.\d+$|^Undefined$/);
+  });
+});
+```
+
+## 🗄️ Testes de Banco de Dados
+
+### Operações CRUD
+```typescript
+describe('IndexedDB Operations', () => {
+  beforeEach(async () => {
+    await clearDatabase();
+  });
+  
+  test('deve salvar relatório', async () => {
+    const report = createTestReport();
+    await saveReport(report);
+    
+    const saved = await getReport(report.id);
+    expect(saved).toEqual(report);
+  });
+  
+  test('deve listar relatórios salvos', async () => {
+    const reports = [
+      createTestReport({ category: 'cabo' }),
+      createTestReport({ category: 'motor' }),
+      createTestReport({ category: 'trafo' })
+    ];
+    
+    await Promise.all(reports.map(r => saveReport(r)));
+    
+    const saved = await getSavedReports();
+    expect(saved).toHaveLength(3);
+  });
+  
+  test('deve filtrar por categoria', async () => {
+    // Criar relatórios de diferentes categorias
+    await saveReport(createTestReport({ category: 'cabo' }));
+    await saveReport(createTestReport({ category: 'motor' }));
+    await saveReport(createTestReport({ category: 'cabo' }));
+    
+    const cabos = await getReportsByCategory('cabo');
+    expect(cabos).toHaveLength(2);
+  });
+});
+```
+
+### Migração de Dados
+```typescript
+describe('Data Migration', () => {
+  test('deve migrar dados da versão 1 para 2', async () => {
+    // 1. Criar dados da versão 1
+    const v1Data = createV1TestData();
+    await insertV1Data(v1Data);
+    
+    // 2. Executar migração
+    await migrateV1ToV2();
+    
+    // 3. Verificar conversão
+    const v2Reports = await getSavedReports();
+    expect(v2Reports).toHaveLength(v1Data.reports.length);
+    
+    // 4. Verificar formato
+    v2Reports.forEach(report => {
+      expect(report).toHaveProperty('readings');
+      expect(report.readings).toHaveLength(4);
+      expect(report).toHaveProperty('dai');
+    });
+  });
+});
+```
+
+## 🎨 Testes de Interface
+
+### Componentes
+```typescript
+describe('Components', () => {
+  test('ModeToggle deve alternar entre modos', () => {
+    render(<ModeToggle mode="generate" onModeChange={mockFn} />);
+    
+    const saveButton = screen.getByText('Salvar');
+    fireEvent.click(saveButton);
+    
+    expect(mockFn).toHaveBeenCalledWith('save');
+  });
+  
+  test('CategorySelect deve mostrar opções válidas', () => {
+    render(<CategorySelect value="cabo" onChange={mockFn} />);
+    
+    expect(screen.getByText('Cabo')).toBeInTheDocument();
+    expect(screen.getByText('Motor')).toBeInTheDocument();
+    expect(screen.getByText('Bomba')).toBeInTheDocument();
+    expect(screen.getByText('Trafo')).toBeInTheDocument();
+    expect(screen.getByText('Outro')).toBeInTheDocument();
+  });
+  
+  test('ResistanceDisplay deve formatar valores', () => {
+    render(<ResistanceDisplay value="1.50GΩ" />);
+    
+    expect(screen.getByText('1.50GΩ')).toBeInTheDocument();
+  });
+});
+```
+
+### Formulários
+```typescript
+describe('Forms', () => {
+  test('QuickGenerateForm deve validar campos obrigatórios', async () => {
+    render(<QuickGenerateForm onSubmit={mockFn} />);
+    
+    const submitButton = screen.getByText('Gerar Valores');
+    expect(submitButton).toBeDisabled();
+    
+    // Preencher categoria
+    fireEvent.change(screen.getByTestId('category-select'), {
+      target: { value: 'cabo' }
+    });
+    
+    // Preencher kV
+    fireEvent.change(screen.getByTestId('kv-input'), {
+      target: { value: '1.00' }
+    });
+    
+    expect(submitButton).toBeEnabled();
+  });
+  
+  test('NewReportForm deve permitir campos opcionais vazios', async () => {
+    render(<NewReportForm onSubmit={mockFn} />);
+    
+    // Preencher apenas obrigatórios
+    fireEvent.change(screen.getByTestId('category-select'), {
+      target: { value: 'motor' }
+    });
+    fireEvent.change(screen.getByTestId('kv-input'), {
+      target: { value: '1.00' }
+    });
+    
+    // Submeter (deve funcionar)
+    fireEvent.click(screen.getByText('Gerar Valores'));
+    
+    expect(mockFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: 'motor',
+        kv: 1.00,
+        client: undefined,
+        site: undefined
+      })
+    );
+  });
+});
+```
+
+## 📱 Testes de Responsividade
+
+### Breakpoints
+```typescript
+describe('Responsive Design', () => {
+  test('deve adaptar layout para mobile', () => {
+    // Simular tela mobile
+    window.innerWidth = 375;
+    window.innerHeight = 667;
+    fireEvent(window, new Event('resize'));
+    
+    render(<Dashboard />);
+    
+    // Verificar layout mobile
+    expect(screen.getByTestId('mobile-menu')).toBeInTheDocument();
+    expect(screen.queryByTestId('sidebar')).not.toBeInTheDocument();
+  });
+  
+  test('deve adaptar layout para desktop', () => {
+    // Simular tela desktop
+    window.innerWidth = 1920;
+    window.innerHeight = 1080;
+    fireEvent(window, new Event('resize'));
+    
+    render(<Dashboard />);
+    
+    // Verificar layout desktop
+    expect(screen.getByTestId('sidebar')).toBeInTheDocument();
+    expect(screen.queryByTestId('mobile-menu')).not.toBeInTheDocument();
+  });
+});
+```
+
+## ♿ Testes de Acessibilidade
+
+### Navegação por Teclado
+```typescript
+describe('Keyboard Navigation', () => {
+  test('deve navegar por tab', () => {
+    render(<QuickGenerateForm />);
+    
+    const categorySelect = screen.getByTestId('category-select');
+    const kvInput = screen.getByTestId('kv-input');
+    const submitButton = screen.getByText('Gerar Valores');
+    
+    categorySelect.focus();
+    expect(categorySelect).toHaveFocus();
+    
+    userEvent.tab();
+    expect(kvInput).toHaveFocus();
+    
+    userEvent.tab();
+    expect(submitButton).toHaveFocus();
+  });
+  
+  test('deve ativar botões com Enter', () => {
+    const mockFn = jest.fn();
+    render(<button onClick={mockFn}>Test Button</button>);
+    
+    const button = screen.getByText('Test Button');
+    button.focus();
+    userEvent.keyboard('{Enter}');
+    
+    expect(mockFn).toHaveBeenCalled();
+  });
+});
+```
+
+### Screen Readers
+```typescript
+describe('Screen Reader Support', () => {
+  test('deve ter labels apropriados', () => {
+    render(<QuickGenerateForm />);
+    
+    const categorySelect = screen.getByLabelText('Categoria');
+    const kvInput = screen.getByLabelText('Tensão (kV)');
+    
+    expect(categorySelect).toBeInTheDocument();
+    expect(kvInput).toBeInTheDocument();
+  });
+  
+  test('deve anunciar mudanças de estado', () => {
+    render(<ModeToggle mode="generate" onModeChange={mockFn} />);
+    
+    const toggle = screen.getByRole('switch');
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+  });
+});
+```
+
+## 🚀 Testes de Performance
+
+### Tempo de Carregamento
+```typescript
+describe('Performance', () => {
+  test('deve carregar dashboard em < 2s', async () => {
+    const startTime = performance.now();
+    
+    await page.goto('/');
+    await page.waitForSelector('[data-testid="dashboard"]');
+    
+    const loadTime = performance.now() - startTime;
+    expect(loadTime).toBeLessThan(2000);
+  });
+  
+  test('deve gerar relatório em < 1s', async () => {
+    await page.goto('/gerar-rapido');
+    
+    const startTime = performance.now();
+    
+    await page.selectOption('[data-testid="category-select"]', 'cabo');
+    await page.fill('[data-testid="kv-input"]', '1.00');
+    await page.click('[data-testid="generate-button"]');
+    await page.waitForSelector('[data-testid="preview"]');
+    
+    const generationTime = performance.now() - startTime;
+    expect(generationTime).toBeLessThan(1000);
+  });
+});
+```
+
+### Memória
+```typescript
+describe('Memory Usage', () => {
+  test('não deve vazar memória ao gerar múltiplos relatórios', async () => {
+    const initialMemory = performance.memory?.usedJSHeapSize || 0;
+    
+    // Gerar 100 relatórios
+    for (let i = 0; i < 100; i++) {
+      await generateReport({ category: 'cabo', kv: 1.00 });
+    }
+    
+    const finalMemory = performance.memory?.usedJSHeapSize || 0;
+    const memoryIncrease = finalMemory - initialMemory;
+    
+    // Aumento deve ser < 10MB
+    expect(memoryIncrease).toBeLessThan(10 * 1024 * 1024);
+  });
+});
+```
+
+## 🔄 Testes de Integração
+
+### Fluxo Completo
+```typescript
+describe('Complete Workflow', () => {
+  test('fluxo completo: gerar → preview → exportar', async () => {
+    // 1. Gerar relatório
+    await page.goto('/gerar-rapido');
+    await page.selectOption('[data-testid="category-select"]', 'trafo');
+    await page.fill('[data-testid="kv-input"]', '1.00');
+    await page.click('[data-testid="generate-button"]');
+    
+    // 2. Verificar preview
+    await expect(page.locator('[data-testid="preview"])).toBeVisible();
+    await expect(page.locator('text=00:15')).toBeVisible();
+    await expect(page.locator('text=01:00')).toBeVisible();
+    
+    // 3. Exportar PDF
+    const downloadPromise = page.waitForEvent('download');
+    await page.click('[data-testid="export-pdf-button"]');
+    const download = await downloadPromise;
+    
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+  });
+  
+  test('fluxo completo: salvar → histórico → recuperar', async () => {
+    // 1. Salvar relatório
+    await page.goto('/novo-relatorio');
+    await page.click('[data-testid="save-mode-toggle"]');
+    await page.selectOption('[data-testid="category-select"]', 'motor');
+    await page.fill('[data-testid="kv-input"]', '1.00');
+    await page.fill('[data-testid="client-input"]', 'Test Client');
+    await page.click('[data-testid="generate-button"]');
+    await page.click('[data-testid="save-button"]');
+    
+    // 2. Verificar no histórico
+    await page.goto('/historico');
+    await expect(page.locator('text=Test Client')).toBeVisible();
+    
+    // 3. Abrir detalhes
+    await page.click('[data-testid="view-button"]');
+    await expect(page.locator('[data-testid="report-details"])).toBeVisible();
+  });
+});
+```
+
+## 🧹 Limpeza e Setup
+
+### Helpers de Teste
+```typescript
+// Utilitários para testes
+export const createTestReport = (overrides = {}) => ({
+  id: generateId(),
+  category: 'cabo',
+  kv: 1.00,
+  readings: [
+    { time: '00:15', kv: '1.00', resistance: '15.23GΩ' },
+    { time: '00:30', kv: '1.00', resistance: '17.45GΩ' },
+    { time: '00:45', kv: '1.00', resistance: '19.67GΩ' },
+    { time: '01:00', kv: '1.00', resistance: '21.89GΩ' }
+  ],
+  dai: '1.25',
+  createdAt: new Date(),
+  isSaved: true,
+  ...overrides
+});
+
+export const clearDatabase = async () => {
+  await db.irReports.clear();
+  await db.parameters.clear();
+};
+
+export const generateReport = async (options) => {
+  // Implementação do helper
+};
+```
+
+### Configuração de Teste
+```typescript
+// jest.config.js
+module.exports = {
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.{ts,tsx}',
+    '<rootDir>/src/**/*.{test,spec}.{ts,tsx}'
+  ],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/test/**/*'
+  ]
+};
+```
+
+## 📊 Métricas de Qualidade
+
+### Cobertura de Código
+- **Linhas**: > 90%
+- **Funções**: > 95%
+- **Branches**: > 85%
+
+### Taxa de Sucesso
+- **Testes Unitários**: > 95%
+- **Testes de Integração**: > 90%
+- **Testes E2E**: > 85%
 
 ### Performance
-- ✅ Tempo de resposta < 2 segundos
-- ✅ Geração de relatórios < 30 segundos
-- ✅ Exportação < 60 segundos
-- ✅ Interface responsiva
-
-### Qualidade
-- ✅ Sem erros críticos
-- ✅ Mensagens de erro claras
-- ✅ Dados consistentes
-- ✅ Interface intuitiva
-
-## 🚨 Cenários de Erro
-
-### TC020: Tratamento de Erros de Banco
-**Cenário**: IndexedDB indisponível
-**Ação**: Sistema deve usar localStorage como fallback
-**Resultado**: Funcionalidade mantida com alerta ao usuário
-
-### TC021: Tratamento de Erros de Exportação
-**Cenário**: Falha na geração de PDF
-**Ação**: Mostrar erro específico e opção de retry
-**Resultado**: Usuário informado e pode tentar novamente
-
-### TC022: Tratamento de Dados Corrompidos
-**Cenário**: JSON de backup inválido
-**Ação**: Validar estrutura antes de importar
-**Resultado**: Rejeitar importação com mensagem clara
-
-## 📈 Métricas de Qualidade
-
-### Cobertura de Testes
-- **Unitários**: > 80%
-- **Integração**: > 70%
-- **E2E**: > 60%
-
-### Performance
-- **Tempo de Carregamento**: < 3s
-- **Tempo de Resposta**: < 2s
-- **Uso de Memória**: < 100MB
-
-### Qualidade de Código
-- **Bugs Críticos**: 0
-- **Bugs Maiores**: < 5
-- **Code Coverage**: > 80%
-
-## 🔄 Processo de Teste
-
-### 1. Preparação
-- Ambiente de teste configurado
-- Dados de teste preparados
-- Ferramentas de teste instaladas
-
-### 2. Execução
-- Testes automatizados executados
-- Testes manuais realizados
-- Bugs documentados
-
-### 3. Análise
-- Resultados analisados
-- Relatórios gerados
-- Decisões tomadas
-
-### 4. Correção
-- Bugs corrigidos
-- Testes re-executados
-- Validação final
+- **Tempo de Execução**: < 5 minutos
+- **Memória**: < 100MB
+- **CPU**: < 50% durante testes
 
 ---
 
-**Nota**: Este plano de testes deve ser atualizado conforme o desenvolvimento do projeto e descoberta de novos cenários de teste.
+**Nota**: Este plano de testes garante a qualidade e confiabilidade do sistema EletriLab Ultra-MVP.

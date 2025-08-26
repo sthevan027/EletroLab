@@ -1,6 +1,7 @@
 import html2pdf from 'html2pdf.js';
 import { Report, Test, Equipment, ExportOptions } from '../types';
 import { formatDate, formatDateTime, formatTestValue } from './validation';
+import type { CupomReport } from './generator';
 
 // Função para exportar relatório em PDF
 export async function exportReportToPDF(
@@ -301,4 +302,38 @@ export function exportFilteredData(
     console.error('Erro ao exportar dados filtrados:', error);
     throw new Error('Falha ao exportar dados filtrados');
   }
+}
+
+// ----------------- Cupom (Ultra-MVP) -----------------
+
+export function exportCupomPDF(node: HTMLElement, filename = 'eletrilab-cupom.pdf') {
+  html2pdf()
+    .set({
+      filename,
+      margin: [5, 5, 5, 5],
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a7', orientation: 'portrait' }
+    })
+    .from(node)
+    .save();
+}
+
+export function exportCupomCSV(r: CupomReport, filename = 'eletrilab-cupom.csv') {
+  const rows: string[][] = [
+    ['model', 'unit_id', 'test_no', 'timestamp'],
+    [r.header.model ?? '', r.header.unit_id ?? '', String(r.header.test_no), r.header.timestamp],
+    [],
+    ['mm:ss', 'kV', 'Ohms'],
+    ...r.lines.map((l) => [l.t, l.kv, l.ohms]),
+    [],
+    ['DAI', r.dai]
+  ];
+  const csv = rows.map((row) => row.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }

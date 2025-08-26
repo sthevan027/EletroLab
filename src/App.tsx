@@ -4,6 +4,7 @@ import { initializeDatabase } from './db/database';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import NewReport from './pages/NewReport';
+import GenerateReport from './pages/GenerateReport';
 import ReportDetail from './pages/ReportDetail';
 import Equipment from './pages/Equipment';
 import Parameters from './pages/Parameters';
@@ -22,6 +23,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/new-report" element={<NewReport />} />
+            <Route path="/generate" element={<GenerateReport />} />
             <Route path="/report/:id" element={<ReportDetail />} />
             <Route path="/equipment" element={<Equipment />} />
             <Route path="/parameters" element={<Parameters />} />

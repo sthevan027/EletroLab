@@ -1,413 +1,422 @@
-# Regras de Validação e Classificação - EletriLab
+# Regras de Validação - EletriLab Ultra-MVP
 
 ## 📋 Visão Geral
 
-O sistema EletriLab utiliza regras de validação e classificação automática para determinar o resultado dos testes elétricos. As regras são baseadas em padrões da indústria e podem ser configuradas pelo usuário.
+Este documento define as regras de validação para o sistema EletriLab Ultra-MVP, focado na geração rápida de relatórios Megger/IR no formato "cupom".
 
-## 🎯 Tipos de Classificação
+## 🎯 Princípios de Validação
 
-### Resultados Possíveis
+### Flexibilidade
+- **Campos Obrigatórios**: Apenas categoria e kV são obrigatórios
+- **Campos Opcionais**: Não bloqueiam a geração de relatórios
+- **Validação Suave**: Avisos em vez de erros bloqueantes
 
-- **🟢 BOM**: Equipamento em excelente condição
-- **🟡 ACEITÁVEL**: Equipamento em condição aceitável, mas requer atenção
-- **🔴 REPROVADO**: Equipamento com problemas que requerem intervenção
+### Precisão
+- **Escala Automática**: Formatação inteligente de resistência
+- **OVRG**: Tratamento especial para valores acima do limite
+- **DAI**: Cálculo automático com validação de OVRG
 
-## ⚡ Lógica de Geração Aleatória
+## 🔧 Validações de Entrada
 
-### Distribuição de Probabilidades
+### Campos Obrigatórios
 
-O sistema gera valores aleatórios seguindo uma distribuição que simula cenários reais:
-
-#### Megger (Resistência de Isolamento)
-- **60%** valores > `good` → **BOM**
-- **25%** entre `min` e `good` → **ACEITÁVEL**
-- **15%** abaixo de `min` → **REPROVADO**
-
-#### Hipot (Tensão Aplicada)
-- **60%** valores ≤ `good` → **BOM**
-- **25%** entre `good` e `max` → **ACEITÁVEL**
-- **15%** > `max` → **REPROVADO**
-
-## 🔧 Regras de Classificação por Tipo de Teste
-
-### 1. Teste Megger (Resistência de Isolamento)
-
-#### Princípio
-Mede a resistência de isolamento entre condutores e terra ou entre condutores.
-
-#### Regras de Classificação
+#### Categoria
 ```typescript
-function classifyMegger(value: number, limits: TestLimit): TestResult {
-  if (value >= limits.good) {
-    return 'BOM';
-  } else if (value >= limits.min) {
-    return 'ACEITÁVEL';
-  } else {
-    return 'REPROVADO';
-  }
+type Category = 'cabo' | 'motor' | 'bomba' | 'trafo' | 'outro';
+
+// Validação
+function validateCategory(category: string): boolean {
+  const validCategories = ['cabo', 'motor', 'bomba', 'trafo', 'outro'];
+  return validCategories.includes(category);
 }
 ```
 
-#### Validações
-- **Valor mínimo**: 0.1 MΩ
-- **Valor máximo**: 10.000 MΩ
-- **Tensão aplicada**: 0.5 kV a 10 kV
-- **Duração**: 1 a 10 minutos
-
-#### Limites por Categoria
-
-| Categoria | Mínimo (MΩ) | Bom (MΩ) | Descrição |
-|-----------|-------------|----------|-----------|
-| Motor | 50 | 500 | Motores elétricos |
-| Cabo | 100 | 1000 | Cabos de potência |
-| Transformador | 200 | 2000 | Transformadores |
-| Painel | 20 | 200 | Painéis elétricos |
-
-### 2. Teste Hipot AC (Tensão Alternada)
-
-#### Princípio
-Aplica tensão alternada elevada para verificar a integridade do isolamento.
-
-#### Regras de Classificação
+#### Tensão (kV)
 ```typescript
-function classifyHipotAC(value: number, limits: TestLimit): TestResult {
-  if (value <= limits.good) {
-    return 'BOM';
-  } else if (value <= limits.max) {
-    return 'ACEITÁVEL';
-  } else {
-    return 'REPROVADO';
-  }
+// Validação
+function validateKV(kv: number): boolean {
+  return kv >= 0.1 && kv <= 50.0;
+}
+
+// Valor padrão
+const DEFAULT_KV = 1.00;
+```
+
+### Campos Opcionais
+
+#### Tag
+```typescript
+// Validação (se preenchido)
+function validateTag(tag: string): boolean {
+  return tag.length <= 50; // Máximo 50 caracteres
 }
 ```
 
-#### Validações
-- **Valor mínimo**: 0.01 mA
-- **Valor máximo**: 100 mA
-- **Tensão aplicada**: 1 kV a 50 kV
-- **Duração**: 1 a 60 minutos
-
-#### Limites por Categoria
-
-| Categoria | Máximo (mA) | Bom (mA) | Descrição |
-|-----------|-------------|----------|-----------|
-| Motor | 10 | 2 | Motores elétricos |
-| Cabo | 5 | 1 | Cabos de potência |
-| Transformador | 15 | 3 | Transformadores |
-| Painel | 8 | 1.5 | Painéis elétricos |
-
-### 3. Teste Hipot DC (Tensão Contínua)
-
-#### Princípio
-Aplica tensão contínua elevada para verificar a integridade do isolamento.
-
-#### Regras de Classificação
+#### Cliente
 ```typescript
-function classifyHipotDC(value: number, limits: TestLimit): TestResult {
-  if (value <= limits.good) {
-    return 'BOM';
-  } else if (value <= limits.max) {
-    return 'ACEITÁVEL';
-  } else {
-    return 'REPROVADO';
-  }
+// Validação (se preenchido)
+function validateClient(client: string): boolean {
+  return client.length <= 100; // Máximo 100 caracteres
 }
 ```
 
-#### Validações
-- **Valor mínimo**: 0.001 mA
-- **Valor máximo**: 50 mA
-- **Tensão aplicada**: 1 kV a 50 kV
-- **Duração**: 1 a 60 minutos
-
-#### Limites por Categoria
-
-| Categoria | Máximo (mA) | Bom (mA) | Descrição |
-|-----------|-------------|----------|-----------|
-| Motor | 5 | 1 | Motores elétricos |
-| Cabo | 2.5 | 0.5 | Cabos de potência |
-| Transformador | 7.5 | 1.5 | Transformadores |
-| Painel | 4 | 0.75 | Painéis elétricos |
-
-## 🔍 Validações de Entrada
-
-### Validações Gerais
-
+#### Site
 ```typescript
-interface ValidationRules {
-  // Tensão aplicada
-  voltage: {
-    min: 0.1;    // kV
-    max: 50;     // kV
-  };
+// Validação (se preenchido)
+function validateSite(site: string): boolean {
+  return site.length <= 100; // Máximo 100 caracteres
+}
+```
+
+#### Operador
+```typescript
+// Validação (se preenchido)
+function validateOperator(operator: string): boolean {
+  return operator.length <= 50; // Máximo 50 caracteres
+}
+```
+
+#### Fabricante
+```typescript
+// Validação (se preenchido)
+function validateManufacturer(manufacturer: string): boolean {
+  return manufacturer.length <= 50; // Máximo 50 caracteres
+}
+```
+
+#### Modelo
+```typescript
+// Validação (se preenchido)
+function validateModel(model: string): boolean {
+  return model.length <= 50; // Máximo 50 caracteres
+}
+```
+
+## 📊 Validações de Geração
+
+### Série de Tempos
+```typescript
+// Série fixa obrigatória
+const REQUIRED_TIMES = ['00:15', '00:30', '00:45', '01:00'];
+
+function validateTimeSeries(readings: Reading[]): boolean {
+  if (readings.length !== 4) return false;
   
-  // Duração do teste
-  duration: {
-    min: 1;      // minutos
-    max: 60;     // minutos
-  };
-  
-  // Valores de teste
-  testValues: {
-    megger: {
-      min: 0.1;      // MΩ
-      max: 10000;    // MΩ
-    };
-    hipot: {
-      min: 0.001;    // mA
-      max: 100;      // mA
-    };
-  };
+  return readings.every((reading, index) => 
+    reading.time === REQUIRED_TIMES[index]
+  );
 }
 ```
 
-### Validações Específicas por Tipo
-
-#### Megger
+### Formatação de Resistência
 ```typescript
-function validateMeggerTest(test: TestData): ValidationResult {
+// Escala automática
+function formatResistance(valueOhms: number, limitTOhms = 5): string {
+  const limit = limitTOhms * 1e12; // 5 TΩ
+  
+  // OVRG
+  if (valueOhms >= limit) return "0.99 OVRG";
+  
+  // Escala automática
+  if (valueOhms < 1e3)  return `${valueOhms.toFixed(0)}Ω`;
+  if (valueOhms < 1e6)  return `${(valueOhms/1e3).toFixed(2)}kΩ`;
+  if (valueOhms < 1e9)  return `${(valueOhms/1e6).toFixed(2)}MΩ`;
+  if (valueOhms < 1e12) return `${(valueOhms/1e9).toFixed(2)}GΩ`;
+  return `${(valueOhms/1e12).toFixed(2)}TΩ`;
+}
+```
+
+### Validação de Resistência
+```typescript
+function validateResistance(resistance: string): boolean {
+  // Padrões válidos
+  const patterns = [
+    /^\d+(\.\d+)?Ω$/,           // 123Ω ou 123.45Ω
+    /^\d+(\.\d+)?kΩ$/,          // 123kΩ ou 123.45kΩ
+    /^\d+(\.\d+)?MΩ$/,          // 123MΩ ou 123.45MΩ
+    /^\d+(\.\d+)?GΩ$/,          // 123GΩ ou 123.45GΩ
+    /^\d+(\.\d+)?TΩ$/,          // 123TΩ ou 123.45TΩ
+    /^0\.99 OVRG$/              // 0.99 OVRG
+  ];
+  
+  return patterns.some(pattern => pattern.test(resistance));
+}
+```
+
+## 🔍 Cálculo do DAI
+
+### Regras do DAI
+```typescript
+function calculateDAI(readings: Reading[]): string {
+  // Encontrar R30 e R60
+  const r30Reading = readings.find(r => r.time === '00:30');
+  const r60Reading = readings.find(r => r.time === '01:00');
+  
+  if (!r30Reading || !r60Reading) return "Undefined";
+  
+  // Verificar se há OVRG
+  if (r30Reading.resistance === "0.99 OVRG" || 
+      r60Reading.resistance === "0.99 OVRG") {
+    return "Undefined";
+  }
+  
+  // Converter para valores numéricos
+  const r30 = parseResistance(r30Reading.resistance);
+  const r60 = parseResistance(r60Reading.resistance);
+  
+  if (r30 === null || r60 === null) return "Undefined";
+  
+  // Calcular DAI
+  const dai = r60 / r30;
+  return dai.toFixed(2);
+}
+```
+
+### Conversão de Resistência
+```typescript
+function parseResistance(resistance: string): number | null {
+  if (resistance === "0.99 OVRG") return null;
+  
+  const match = resistance.match(/^(\d+(?:\.\d+)?)(Ω|kΩ|MΩ|GΩ|TΩ)$/);
+  if (!match) return null;
+  
+  const value = parseFloat(match[1]);
+  const unit = match[2];
+  
+  switch (unit) {
+    case 'Ω': return value;
+    case 'kΩ': return value * 1e3;
+    case 'MΩ': return value * 1e6;
+    case 'GΩ': return value * 1e9;
+    case 'TΩ': return value * 1e12;
+    default: return null;
+  }
+}
+```
+
+## 🎯 Perfis por Categoria
+
+### Validação de Perfis
+```typescript
+interface CategoryProfile {
+  baseG: [number, number];   // Faixa inicial em GΩ
+  growth: [number, number];  // Multiplicador por passo
+  minGoodG: number;          // Mínimo desejado em GΩ
+}
+
+function validateProfile(profile: CategoryProfile): boolean {
+  // Validar baseG
+  if (profile.baseG[0] < 0 || profile.baseG[1] < profile.baseG[0]) {
+    return false;
+  }
+  
+  // Validar growth
+  if (profile.growth[0] < 1 || profile.growth[1] < profile.growth[0]) {
+    return false;
+  }
+  
+  // Validar minGoodG
+  if (profile.minGoodG < 0) return false;
+  
+  return true;
+}
+```
+
+### Regras Específicas por Categoria
+
+#### Cabo (fase-fase)
+```typescript
+// Cabos devem sempre gerar >= 5 GΩ
+function validateCaboReadings(readings: Reading[]): boolean {
+  return readings.every(reading => {
+    const value = parseResistance(reading.resistance);
+    return value === null || value >= 5e9; // 5 GΩ
+  });
+}
+```
+
+## 📈 Validações de Exportação
+
+### PDF
+```typescript
+function validatePDFExport(report: IRReport): boolean {
+  // Verificar se o relatório tem dados mínimos
+  if (!report.category || !report.kv) return false;
+  if (!report.readings || report.readings.length !== 4) return false;
+  
+  // Verificar se todos os readings são válidos
+  return report.readings.every(reading => 
+    validateResistance(reading.resistance)
+  );
+}
+```
+
+### CSV
+```typescript
+function validateCSVExport(report: IRReport): boolean {
+  // Mesmas validações do PDF
+  return validatePDFExport(report);
+}
+```
+
+## 🗄️ Validações de Banco de Dados
+
+### Salvamento
+```typescript
+function validateForSave(report: IRReport): ValidationResult {
   const errors: string[] = [];
+  const warnings: string[] = [];
   
-  // Validar tensão
-  if (test.kv < 0.5 || test.kv > 10) {
-    errors.push('Tensão deve estar entre 0.5 e 10 kV para teste Megger');
+  // Validações obrigatórias
+  if (!validateCategory(report.category)) {
+    errors.push('Categoria inválida');
   }
   
-  // Validar duração
-  if (test.duration < 1 || test.duration > 10) {
-    errors.push('Duração deve estar entre 1 e 10 minutos para teste Megger');
+  if (!validateKV(report.kv)) {
+    errors.push('Tensão (kV) deve estar entre 0.1 e 50.0');
   }
   
-  // Validar valor
-  if (test.value < 0.1 || test.value > 10000) {
-    errors.push('Valor deve estar entre 0.1 e 10.000 MΩ');
+  if (!validateTimeSeries(report.readings)) {
+    errors.push('Série de tempos inválida');
   }
   
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-```
-
-#### Hipot
-```typescript
-function validateHipotTest(test: TestData): ValidationResult {
-  const errors: string[] = [];
-  
-  // Validar tensão
-  if (test.kv < 1 || test.kv > 50) {
-    errors.push('Tensão deve estar entre 1 e 50 kV para teste Hipot');
-  }
-  
-  // Validar duração
-  if (test.duration < 1 || test.duration > 60) {
-    errors.push('Duração deve estar entre 1 e 60 minutos para teste Hipot');
-  }
-  
-  // Validar valor
-  if (test.value < 0.001 || test.value > 100) {
-    errors.push('Valor deve estar entre 0.001 e 100 mA');
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-```
-
-## 🎲 Algoritmo de Geração Aleatória
-
-### Implementação
-
-```typescript
-function generateRandomValue(testType: TestType, category: string): number {
-  const limits = getLimitsForCategory(testType, category);
-  const random = Math.random();
-  
-  if (testType === 'megger') {
-    return generateMeggerValue(random, limits);
-  } else {
-    return generateHipotValue(random, limits);
-  }
-}
-
-function generateMeggerValue(random: number, limits: TestLimit): number {
-  if (random < 0.15) {
-    // 15% - REPROVADO (abaixo do mínimo)
-    return limits.min * (0.1 + Math.random() * 0.9);
-  } else if (random < 0.40) {
-    // 25% - ACEITÁVEL (entre min e good)
-    return limits.min + Math.random() * (limits.good - limits.min);
-  } else {
-    // 60% - BOM (acima do good)
-    return limits.good + Math.random() * (limits.good * 2);
-  }
-}
-
-function generateHipotValue(random: number, limits: TestLimit): number {
-  if (random < 0.60) {
-    // 60% - BOM (abaixo ou igual ao good)
-    return limits.good * (0.1 + Math.random() * 1);
-  } else if (random < 0.85) {
-    // 25% - ACEITÁVEL (entre good e max)
-    return limits.good + Math.random() * (limits.max - limits.good);
-  } else {
-    // 15% - REPROVADO (acima do max)
-    return limits.max + Math.random() * (limits.max * 0.5);
-  }
-}
-```
-
-## 🔧 Configuração de Limites
-
-### Interface de Configuração
-
-```typescript
-interface LimitConfiguration {
-  testType: 'megger' | 'hipot_ac' | 'hipot_dc';
-  category: string;
-  limits: {
-    min?: number;
-    max?: number;
-    good: number;
-    units: string;
-    description: string;
-  };
-}
-```
-
-### Validação de Configuração
-
-```typescript
-function validateLimitConfiguration(config: LimitConfiguration): ValidationResult {
-  const errors: string[] = [];
-  
-  // Validar valores numéricos
-  if (config.limits.good <= 0) {
-    errors.push('Valor "bom" deve ser maior que zero');
-  }
-  
-  if (config.testType === 'megger') {
-    if (config.limits.min && config.limits.min >= config.limits.good) {
-      errors.push('Valor mínimo deve ser menor que o valor bom para Megger');
-    }
-  } else {
-    if (config.limits.max && config.limits.max <= config.limits.good) {
-      errors.push('Valor máximo deve ser maior que o valor bom para Hipot');
-    }
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-```
-
-## 📊 Estatísticas de Classificação
-
-### Cálculo de Percentuais
-
-```typescript
-function calculateClassificationStats(tests: Test[]): ClassificationStats {
-  const total = tests.length;
-  const stats = {
-    bom: 0,
-    aceitavel: 0,
-    reprovado: 0
-  };
-  
-  tests.forEach(test => {
-    switch (test.result) {
-      case 'BOM':
-        stats.bom++;
-        break;
-      case 'ACEITAVEL':
-        stats.aceitavel++;
-        break;
-      case 'REPROVADO':
-        stats.reprovado++;
-        break;
+  // Validações de readings
+  report.readings.forEach((reading, index) => {
+    if (!validateResistance(reading.resistance)) {
+      errors.push(`Resistência ${index + 1} inválida`);
     }
   });
   
-  return {
-    total,
-    bom: {
-      count: stats.bom,
-      percentage: (stats.bom / total) * 100
-    },
-    aceitavel: {
-      count: stats.aceitavel,
-      percentage: (stats.aceitavel / total) * 100
-    },
-    reprovado: {
-      count: stats.reprovado,
-      percentage: (stats.reprovado / total) * 100
-    }
-  };
+  // Avisos para campos opcionais
+  if (report.tag && !validateTag(report.tag)) {
+    warnings.push('Tag muito longa (máximo 50 caracteres)');
+  }
+  
+  if (report.client && !validateClient(report.client)) {
+    warnings.push('Cliente muito longo (máximo 100 caracteres)');
+  }
+  
+  return { errors, warnings, isValid: errors.length === 0 };
+}
+```
+
+### Número de Relatório
+```typescript
+function validateReportNumber(number: string): boolean {
+  // Formato: REL-YYYY-XXXX (ex: REL-2024-0001)
+  const pattern = /^REL-\d{4}-\d{4}$/;
+  return pattern.test(number);
+}
+```
+
+## 🔧 Validações de Parâmetros
+
+### Limite OVRG
+```typescript
+function validateOVRGLimit(limit: number): boolean {
+  return limit > 0 && limit <= 100; // Entre 0 e 100 TΩ
+}
+```
+
+### Perfis de Categoria
+```typescript
+function validateCategoryProfiles(profiles: Record<string, CategoryProfile>): boolean {
+  const requiredCategories = ['cabo', 'motor', 'bomba', 'trafo', 'outro'];
+  
+  // Verificar se todas as categorias estão presentes
+  for (const category of requiredCategories) {
+    if (!profiles[category]) return false;
+    if (!validateProfile(profiles[category])) return false;
+  }
+  
+  return true;
+}
+```
+
+## 📊 Validações de Estatísticas
+
+### KPIs
+```typescript
+function validateKPIs(stats: KPIs): boolean {
+  // Total deve ser >= 0
+  if (stats.total < 0) return false;
+  
+  // Percentuais devem somar aproximadamente 100%
+  const totalPercent = stats.percentBom + stats.percentAceitavel + stats.percentReprovado;
+  if (Math.abs(totalPercent - 100) > 1) return false; // Tolerância de 1%
+  
+  return true;
 }
 ```
 
 ## 🚨 Tratamento de Erros
 
-### Cenários de Erro
-
-1. **Limites não configurados**
-   - Usar valores padrão
-   - Alertar usuário para configurar
-
-2. **Valores fora do range**
-   - Rejeitar entrada
-   - Mostrar mensagem de erro específica
-
-3. **Categoria não encontrada**
-   - Usar categoria genérica
-   - Sugerir criação da categoria
-
-### Implementação de Fallback
-
+### Tipos de Erro
 ```typescript
-function getLimitsWithFallback(testType: TestType, category: string): TestLimit {
-  const limits = getLimits(testType, category);
-  
-  if (!limits) {
-    // Fallback para categoria genérica
-    const genericLimits = getGenericLimits(testType);
-    console.warn(`Limites não encontrados para ${category}, usando valores genéricos`);
-    return genericLimits;
-  }
-  
-  return limits;
+enum ValidationErrorType {
+  REQUIRED_FIELD = 'REQUIRED_FIELD',
+  INVALID_FORMAT = 'INVALID_FORMAT',
+  OUT_OF_RANGE = 'OUT_OF_RANGE',
+  INVALID_VALUE = 'INVALID_VALUE'
+}
+
+interface ValidationError {
+  type: ValidationErrorType;
+  field: string;
+  message: string;
+  value?: any;
 }
 ```
 
-## 🔄 Atualização de Regras
-
-### Versionamento
-
+### Mensagens de Erro
 ```typescript
-interface ValidationRulesVersion {
-  version: string;
-  date: Date;
-  changes: string[];
-  rules: ValidationRules;
-}
+const ERROR_MESSAGES = {
+  REQUIRED_CATEGORY: 'Categoria é obrigatória',
+  REQUIRED_KV: 'Tensão (kV) é obrigatória',
+  INVALID_KV: 'Tensão deve estar entre 0.1 e 50.0 kV',
+  INVALID_CATEGORY: 'Categoria inválida',
+  INVALID_RESISTANCE: 'Formato de resistência inválido',
+  INVALID_TIME_SERIES: 'Série de tempos inválida',
+  OVRG_LIMIT_EXCEEDED: 'Valor excede limite OVRG'
+};
 ```
 
-### Migração de Regras
+## ✅ Testes de Validação
 
+### Cenários de Teste
 ```typescript
-function migrateValidationRules(currentVersion: string, targetVersion: string): boolean {
-  // Implementar lógica de migração
-  // Atualizar limites padrão se necessário
-  // Manter compatibilidade com dados existentes
-  return true;
-}
+describe('Validation Rules', () => {
+  test('should validate valid category', () => {
+    expect(validateCategory('cabo')).toBe(true);
+    expect(validateCategory('invalid')).toBe(false);
+  });
+  
+  test('should validate valid KV', () => {
+    expect(validateKV(1.00)).toBe(true);
+    expect(validateKV(0.05)).toBe(false);
+    expect(validateKV(100)).toBe(false);
+  });
+  
+  test('should format resistance correctly', () => {
+    expect(formatResistance(500)).toBe('500Ω');
+    expect(formatResistance(1500)).toBe('1.50kΩ');
+    expect(formatResistance(1.5e9)).toBe('1.50GΩ');
+    expect(formatResistance(6e12)).toBe('0.99 OVRG');
+  });
+  
+  test('should calculate DAI correctly', () => {
+    const readings = [
+      { time: '00:15', kv: '1.00', resistance: '1.00GΩ' },
+      { time: '00:30', kv: '1.00', resistance: '1.10GΩ' },
+      { time: '00:45', kv: '1.00', resistance: '1.20GΩ' },
+      { time: '01:00', kv: '1.00', resistance: '1.30GΩ' }
+    ];
+    
+    expect(calculateDAI(readings)).toBe('1.18');
+  });
+});
 ```
 
 ---
 
-**Nota**: As regras de validação são flexíveis e podem ser ajustadas conforme necessidades específicas do projeto. Sempre teste as regras com dados reais antes de implementar em produção.
+**Nota**: Estas regras de validação garantem a integridade dos dados mantendo a flexibilidade necessária para o uso rápido do sistema.
