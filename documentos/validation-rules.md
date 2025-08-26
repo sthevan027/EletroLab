@@ -1,422 +1,705 @@
-# Regras de Validação - EletriLab Ultra-MVP
+# Regras de Validação - EletriLab Ultra-MVP com IA
 
-## 📋 Visão Geral
+## Visão Geral
 
-Este documento define as regras de validação para o sistema EletriLab Ultra-MVP, focado na geração rápida de relatórios Megger/IR no formato "cupom".
+O sistema EletriLab Ultra-MVP com IA implementa validações flexíveis e inteligentes para geração de relatórios Megger/IR, incluindo suporte a geração multi-fase e validação com correlações.
 
-## 🎯 Princípios de Validação
+## Princípios de Validação
 
 ### Flexibilidade
-- **Campos Obrigatórios**: Apenas categoria e kV são obrigatórios
-- **Campos Opcionais**: Não bloqueiam a geração de relatórios
-- **Validação Suave**: Avisos em vez de erros bloqueantes
+- **Campos opcionais**: Apenas `category` e `kV` são obrigatórios
+- **Geração sem bloqueio**: Campos como fabricante/modelo não impedem geração
+- **Validação progressiva**: Validações aplicadas conforme necessário
 
 ### Precisão
-- **Escala Automática**: Formatação inteligente de resistência
-- **OVRG**: Tratamento especial para valores acima do limite
-- **DAI**: Cálculo automático com validação de OVRG
+- **Escala automática**: Formatação correta de resistência (Ω → TΩ)
+- **OVRG**: Tratamento especial para valores ≥ 5 TΩ
+- **DAI**: Cálculo preciso ou "Undefined" quando apropriado
 
-## 🔧 Validações de Entrada
+### Inteligência
+- **Correlações**: Validação de relacionamentos entre fases
+- **Consistência**: Verificação de valores fase/massa
+- **Aprendizado**: Validação baseada em histórico
 
-### Campos Obrigatórios
+## Validações de Entrada
 
-#### Categoria
+### Categoria
 ```typescript
-type Category = 'cabo' | 'motor' | 'bomba' | 'trafo' | 'outro';
-
-// Validação
-function validateCategory(category: string): boolean {
+// Validação de categoria
+function validateCategory(category: string): ValidationResult {
   const validCategories = ['cabo', 'motor', 'bomba', 'trafo', 'outro'];
-  return validCategories.includes(category);
+  return {
+    isValid: validCategories.includes(category),
+    errors: validCategories.includes(category) ? [] : [
+      { field: 'category', message: 'Categoria deve ser: cabo, motor, bomba, trafo, outro' }
+    ]
+  };
 }
 ```
 
-#### Tensão (kV)
+### Tensão (kV)
 ```typescript
-// Validação
-function validateKV(kv: number): boolean {
-  return kv >= 0.1 && kv <= 50.0;
+// Validação de tensão
+function validateVoltage(kv: number): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (typeof kv !== 'number' || isNaN(kv)) {
+    errors.push({ field: 'kv', message: 'Tensão deve ser um número válido' });
+  } else if (kv < 0.1 || kv > 50) {
+    errors.push({ field: 'kv', message: 'Tensão deve estar entre 0.1 e 50 kV' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
+```
 
-// Valor padrão
-const DEFAULT_KV = 1.00;
+### Tag (Opcional)
+```typescript
+// Validação de tag
+function validateTag(tag?: string): ValidationResult {
+  if (!tag) return { isValid: true, errors: [] };
+  
+  const errors: ValidationError[] = [];
+  if (tag.length > 50) {
+    errors.push({ field: 'tag', message: 'Tag deve ter no máximo 50 caracteres' });
+  }
+  if (!/^[a-zA-Z0-9\-\_\s]+$/.test(tag)) {
+    errors.push({ field: 'tag', message: 'Tag deve conter apenas letras, números, hífens e underscores' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
 ```
 
 ### Campos Opcionais
-
-#### Tag
 ```typescript
-// Validação (se preenchido)
-function validateTag(tag: string): boolean {
-  return tag.length <= 50; // Máximo 50 caracteres
+// Validação de campos opcionais
+function validateOptionalFields(fields: {
+  client?: string;
+  site?: string;
+  operator?: string;
+  manufacturer?: string;
+  model?: string;
+}): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  // Validações de comprimento
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value && value.length > 100) {
+      errors.push({ field: key, message: `${key} deve ter no máximo 100 caracteres` });
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
-#### Cliente
-```typescript
-// Validação (se preenchido)
-function validateClient(client: string): boolean {
-  return client.length <= 100; // Máximo 100 caracteres
-}
-```
-
-#### Site
-```typescript
-// Validação (se preenchido)
-function validateSite(site: string): boolean {
-  return site.length <= 100; // Máximo 100 caracteres
-}
-```
-
-#### Operador
-```typescript
-// Validação (se preenchido)
-function validateOperator(operator: string): boolean {
-  return operator.length <= 50; // Máximo 50 caracteres
-}
-```
-
-#### Fabricante
-```typescript
-// Validação (se preenchido)
-function validateManufacturer(manufacturer: string): boolean {
-  return manufacturer.length <= 50; // Máximo 50 caracteres
-}
-```
-
-#### Modelo
-```typescript
-// Validação (se preenchido)
-function validateModel(model: string): boolean {
-  return model.length <= 50; // Máximo 50 caracteres
-}
-```
-
-## 📊 Validações de Geração
+## Validações de Geração
 
 ### Série de Tempos
 ```typescript
-// Série fixa obrigatória
-const REQUIRED_TIMES = ['00:15', '00:30', '00:45', '01:00'];
-
-function validateTimeSeries(readings: Reading[]): boolean {
-  if (readings.length !== 4) return false;
+// Validação da série de tempos fixa
+function validateTimeSeries(readings: any[]): ValidationResult {
+  const expectedTimes = ['00:15', '00:30', '00:45', '01:00'];
+  const errors: ValidationError[] = [];
   
-  return readings.every((reading, index) => 
-    reading.time === REQUIRED_TIMES[index]
-  );
+  if (readings.length !== 4) {
+    errors.push({ field: 'readings', message: 'Deve ter exatamente 4 leituras' });
+  }
+  
+  readings.forEach((reading, index) => {
+    if (reading.time !== expectedTimes[index]) {
+      errors.push({ 
+        field: 'readings', 
+        message: `Tempo ${index + 1} deve ser ${expectedTimes[index]}` 
+      });
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
 ### Formatação de Resistência
 ```typescript
-// Escala automática
-function formatResistance(valueOhms: number, limitTOhms = 5): string {
-  const limit = limitTOhms * 1e12; // 5 TΩ
+// Validação da formatação de resistência
+function validateResistanceFormat(resistance: string): ValidationResult {
+  const errors: ValidationError[] = [];
   
-  // OVRG
-  if (valueOhms >= limit) return "0.99 OVRG";
+  if (resistance === '0.99 OVRG') {
+    return { isValid: true, errors: [] };
+  }
   
-  // Escala automática
-  if (valueOhms < 1e3)  return `${valueOhms.toFixed(0)}Ω`;
-  if (valueOhms < 1e6)  return `${(valueOhms/1e3).toFixed(2)}kΩ`;
-  if (valueOhms < 1e9)  return `${(valueOhms/1e6).toFixed(2)}MΩ`;
-  if (valueOhms < 1e12) return `${(valueOhms/1e9).toFixed(2)}GΩ`;
-  return `${(valueOhms/1e12).toFixed(2)}TΩ`;
+  const patterns = [
+    /^\d+Ω$/,           // 500Ω
+    /^\d+\.\d{2}kΩ$/,   // 2.50kΩ
+    /^\d+\.\d{2}MΩ$/,   // 15.30MΩ
+    /^\d+\.\d{2}GΩ$/,   // 5.23GΩ
+    /^\d+\.\d{2}TΩ$/    // 2.15TΩ
+  ];
+  
+  const isValid = patterns.some(pattern => pattern.test(resistance));
+  if (!isValid) {
+    errors.push({ 
+      field: 'resistance', 
+      message: 'Formato de resistência inválido. Use: 500Ω, 2.50kΩ, 15.30MΩ, 5.23GΩ, 2.15TΩ ou 0.99 OVRG' 
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
 ### Validação de Resistência
 ```typescript
-function validateResistance(resistance: string): boolean {
-  // Padrões válidos
-  const patterns = [
-    /^\d+(\.\d+)?Ω$/,           // 123Ω ou 123.45Ω
-    /^\d+(\.\d+)?kΩ$/,          // 123kΩ ou 123.45kΩ
-    /^\d+(\.\d+)?MΩ$/,          // 123MΩ ou 123.45MΩ
-    /^\d+(\.\d+)?GΩ$/,          // 123GΩ ou 123.45GΩ
-    /^\d+(\.\d+)?TΩ$/,          // 123TΩ ou 123.45TΩ
-    /^0\.99 OVRG$/              // 0.99 OVRG
-  ];
+// Validação de valores de resistência
+function validateResistanceValue(resistance: string, category: string): ValidationResult {
+  const errors: ValidationError[] = [];
   
-  return patterns.some(pattern => pattern.test(resistance));
+  if (resistance === '0.99 OVRG') {
+    return { isValid: true, errors: [] };
+  }
+  
+  const value = parseResistance(resistance);
+  if (value === undefined) {
+    errors.push({ field: 'resistance', message: 'Não foi possível interpretar o valor de resistência' });
+    return { isValid: false, errors };
+  }
+  
+  // Validações específicas por categoria
+  if (category === 'cabo') {
+    const valueG = value / 1e9;
+    if (valueG < 5) {
+      errors.push({ 
+        field: 'resistance', 
+        message: 'Para cabos, resistência deve ser ≥ 5 GΩ' 
+      });
+    }
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
-## 🔍 Cálculo do DAI
+## Cálculo do DAI
 
 ### Regras do DAI
 ```typescript
-function calculateDAI(readings: Reading[]): string {
-  // Encontrar R30 e R60
-  const r30Reading = readings.find(r => r.time === '00:30');
-  const r60Reading = readings.find(r => r.time === '01:00');
+// Cálculo e validação do DAI
+function calculateAndValidateDAI(readings: any[]): ValidationResult {
+  const errors: ValidationError[] = [];
   
-  if (!r30Reading || !r60Reading) return "Undefined";
-  
-  // Verificar se há OVRG
-  if (r30Reading.resistance === "0.99 OVRG" || 
-      r60Reading.resistance === "0.99 OVRG") {
-    return "Undefined";
+  if (readings.length < 4) {
+    errors.push({ field: 'dai', message: 'Precisa de 4 leituras para calcular DAI' });
+    return { isValid: false, errors };
   }
   
-  // Converter para valores numéricos
-  const r30 = parseResistance(r30Reading.resistance);
-  const r60 = parseResistance(r60Reading.resistance);
+  const r30 = parseResistance(readings[1].resistance); // 00:30
+  const r60 = parseResistance(readings[3].resistance); // 01:00
   
-  if (r30 === null || r60 === null) return "Undefined";
+  let dai: string;
+  if (r30 === undefined || r60 === undefined) {
+    dai = 'Undefined';
+  } else if (r30 === 0) {
+    dai = 'Undefined';
+    errors.push({ field: 'dai', message: 'R30 não pode ser zero' });
+  } else {
+    dai = (r60 / r30).toFixed(2);
+  }
   
-  // Calcular DAI
-  const dai = r60 / r30;
-  return dai.toFixed(2);
+  return { 
+    isValid: errors.length === 0, 
+    errors,
+    value: dai 
+  };
 }
 ```
 
 ### Conversão de Resistência
 ```typescript
-function parseResistance(resistance: string): number | null {
-  if (resistance === "0.99 OVRG") return null;
+// Função para converter resistência formatada para número
+function parseResistance(resistance: string): number | undefined {
+  if (resistance.includes('OVRG')) return undefined;
   
-  const match = resistance.match(/^(\d+(?:\.\d+)?)(Ω|kΩ|MΩ|GΩ|TΩ)$/);
-  if (!match) return null;
+  const patterns = [
+    { regex: /^(\d+)Ω$/, multiplier: 1 },
+    { regex: /^(\d+\.\d{2})kΩ$/, multiplier: 1e3 },
+    { regex: /^(\d+\.\d{2})MΩ$/, multiplier: 1e6 },
+    { regex: /^(\d+\.\d{2})GΩ$/, multiplier: 1e9 },
+    { regex: /^(\d+\.\d{2})TΩ$/, multiplier: 1e12 }
+  ];
   
-  const value = parseFloat(match[1]);
-  const unit = match[2];
-  
-  switch (unit) {
-    case 'Ω': return value;
-    case 'kΩ': return value * 1e3;
-    case 'MΩ': return value * 1e6;
-    case 'GΩ': return value * 1e9;
-    case 'TΩ': return value * 1e12;
-    default: return null;
+  for (const pattern of patterns) {
+    const match = resistance.match(pattern.regex);
+    if (match) {
+      return parseFloat(match[1]) * pattern.multiplier;
+    }
   }
+  
+  return undefined;
 }
 ```
 
-## 🎯 Perfis por Categoria
+## Validações Multi-Fase
 
-### Validação de Perfis
+### Configuração de Fases
 ```typescript
-interface CategoryProfile {
-  baseG: [number, number];   // Faixa inicial em GΩ
-  growth: [number, number];  // Multiplicador por passo
-  minGoodG: number;          // Mínimo desejado em GΩ
-}
-
-function validateProfile(profile: CategoryProfile): boolean {
-  // Validar baseG
-  if (profile.baseG[0] < 0 || profile.baseG[1] < profile.baseG[0]) {
-    return false;
+// Validação da configuração de fases
+function validatePhaseConfiguration(config: MultiPhaseConfig): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  // Validar nomes das fases
+  if (!config.phases.names || config.phases.names.length < 2) {
+    errors.push({ field: 'phases', message: 'Deve ter pelo menos 2 fases' });
   }
   
-  // Validar growth
-  if (profile.growth[0] < 1 || profile.growth[1] < profile.growth[0]) {
-    return false;
+  if (config.phases.names.length > 20) {
+    errors.push({ field: 'phases', message: 'Máximo de 20 fases permitido' });
   }
   
-  // Validar minGoodG
-  if (profile.minGoodG < 0) return false;
+  // Validar nomes únicos
+  const uniqueNames = new Set(config.phases.names);
+  if (uniqueNames.size !== config.phases.names.length) {
+    errors.push({ field: 'phases', message: 'Nomes das fases devem ser únicos' });
+  }
   
-  return true;
-}
-```
-
-### Regras Específicas por Categoria
-
-#### Cabo (fase-fase)
-```typescript
-// Cabos devem sempre gerar >= 5 GΩ
-function validateCaboReadings(readings: Reading[]): boolean {
-  return readings.every(reading => {
-    const value = parseResistance(reading.resistance);
-    return value === null || value >= 5e9; // 5 GΩ
+  // Validar formato dos nomes
+  config.phases.names.forEach((name, index) => {
+    if (!/^[A-Za-z0-9]+$/.test(name)) {
+      errors.push({ 
+        field: 'phases', 
+        message: `Nome da fase ${index + 1} deve conter apenas letras e números` 
+      });
+    }
   });
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
-## 📈 Validações de Exportação
+### Combinações Fase/Fase
+```typescript
+// Validação de combinações fase/fase
+function validatePhaseCombinations(
+  combinations: string[][], 
+  phaseNames: string[]
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (combinations.length === 0) {
+    errors.push({ field: 'combinations', message: 'Deve ter pelo menos uma combinação' });
+  }
+  
+  // Validar cada combinação
+  combinations.forEach((combination, index) => {
+    if (combination.length !== 2) {
+      errors.push({ 
+        field: 'combinations', 
+        message: `Combinação ${index + 1} deve ter exatamente 2 fases` 
+      });
+    }
+    
+    combination.forEach(phase => {
+      if (!phaseNames.includes(phase)) {
+        errors.push({ 
+          field: 'combinations', 
+          message: `Fase '${phase}' não existe na configuração` 
+        });
+      }
+    });
+    
+    // Validar que não é a mesma fase
+    if (combination[0] === combination[1]) {
+      errors.push({ 
+        field: 'combinations', 
+        message: `Combinação ${index + 1} não pode ter a mesma fase duas vezes` 
+      });
+    }
+  });
+  
+  // Validar combinações únicas
+  const uniqueCombinations = new Set(
+    combinations.map(c => c.sort().join('/'))
+  );
+  if (uniqueCombinations.size !== combinations.length) {
+    errors.push({ field: 'combinations', message: 'Combinações devem ser únicas' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+```
+
+### Nome da Massa
+```typescript
+// Validação do nome da massa
+function validateGroundName(groundName: string, phaseNames: string[]): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (!groundName || groundName.trim() === '') {
+    errors.push({ field: 'groundName', message: 'Nome da massa é obrigatório' });
+  }
+  
+  if (groundName.length > 10) {
+    errors.push({ field: 'groundName', message: 'Nome da massa deve ter no máximo 10 caracteres' });
+  }
+  
+  if (!/^[A-Za-z0-9]+$/.test(groundName)) {
+    errors.push({ field: 'groundName', message: 'Nome da massa deve conter apenas letras e números' });
+  }
+  
+  if (phaseNames.includes(groundName)) {
+    errors.push({ field: 'groundName', message: 'Nome da massa não pode ser igual ao nome de uma fase' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+```
+
+## Validações de IA
+
+### Correlações entre Fases
+```typescript
+// Validação de correlações entre fases
+function validatePhaseCorrelations(
+  baseValues: number[], 
+  phaseToPhaseValues: number[][],
+  threshold: number = 0.8
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  // Validar que valores fase/fase são correlacionados com valores base
+  phaseToPhaseValues.forEach((values, index) => {
+    const phase1 = index % baseValues.length;
+    const phase2 = Math.floor(index / baseValues.length);
+    
+    if (phase1 !== phase2) {
+      const expectedCorrelation = (baseValues[phase1] + baseValues[phase2]) / 2;
+      const actualValue = values[0]; // Primeira leitura
+      
+      const correlation = Math.abs(actualValue - expectedCorrelation) / expectedCorrelation;
+      if (correlation > (1 - threshold)) {
+        errors.push({ 
+          field: 'correlations', 
+          message: `Correlação entre fases ${phase1 + 1} e ${phase2 + 1} está fora do esperado` 
+        });
+      }
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
+}
+```
+
+### Consistência Fase/Massa
+```typescript
+// Validação de consistência fase/massa
+function validatePhaseToGroundConsistency(
+  baseValues: number[],
+  phaseToGroundValues: number[],
+  threshold: number = 0.7
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  phaseToGroundValues.forEach((value, index) => {
+    const baseValue = baseValues[index];
+    const expectedValue = baseValue * 0.8; // Fase/massa tipicamente 80% da fase
+    
+    const consistency = Math.abs(value - expectedValue) / expectedValue;
+    if (consistency > (1 - threshold)) {
+      errors.push({ 
+        field: 'phaseToGround', 
+        message: `Valor fase/massa ${index + 1} está inconsistente com valor base` 
+      });
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
+}
+```
+
+### Confiança da IA
+```typescript
+// Validação de confiança da IA
+function validateAIConfidence(
+  confidence: number, 
+  threshold: number = 0.7
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (confidence < threshold) {
+    errors.push({ 
+      field: 'aiConfidence', 
+      message: `Confiança da IA (${confidence.toFixed(2)}) está abaixo do threshold (${threshold})` 
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+```
+
+## Validações de Exportação
 
 ### PDF
 ```typescript
-function validatePDFExport(report: IRReport): boolean {
-  // Verificar se o relatório tem dados mínimos
-  if (!report.category || !report.kv) return false;
-  if (!report.readings || report.readings.length !== 4) return false;
+// Validação para exportação PDF
+function validatePDFExport(report: IRReport | MultiPhaseReport): ValidationResult {
+  const errors: ValidationError[] = [];
   
-  // Verificar se todos os readings são válidos
-  return report.readings.every(reading => 
-    validateResistance(reading.resistance)
-  );
+  if (!report) {
+    errors.push({ field: 'report', message: 'Relatório é obrigatório para exportação' });
+  }
+  
+  // Validar que tem dados para exportar
+  if ('readings' in report && (!report.readings || report.readings.length === 0)) {
+    errors.push({ field: 'readings', message: 'Relatório deve ter leituras para exportar' });
+  }
+  
+  if ('reports' in report && (!report.reports || report.reports.length === 0)) {
+    errors.push({ field: 'reports', message: 'Relatório multi-fase deve ter sub-relatórios' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
 ### CSV
 ```typescript
-function validateCSVExport(report: IRReport): boolean {
-  // Mesmas validações do PDF
-  return validatePDFExport(report);
+// Validação para exportação CSV
+function validateCSVExport(report: IRReport | MultiPhaseReport): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (!report) {
+    errors.push({ field: 'report', message: 'Relatório é obrigatório para exportação' });
+  }
+  
+  // Validar que tem dados estruturados
+  if ('readings' in report && (!report.readings || report.readings.length === 0)) {
+    errors.push({ field: 'readings', message: 'Relatório deve ter leituras para exportar' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
-## 🗄️ Validações de Banco de Dados
+## Validações de Banco de Dados
 
 ### Salvamento
 ```typescript
-function validateForSave(report: IRReport): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+// Validação para salvamento
+function validateForSaving(report: IRReport | MultiPhaseReport): ValidationResult {
+  const errors: ValidationError[] = [];
   
-  // Validações obrigatórias
-  if (!validateCategory(report.category)) {
-    errors.push('Categoria inválida');
+  // Validar campos obrigatórios para salvamento
+  if ('category' in report && !report.category) {
+    errors.push({ field: 'category', message: 'Categoria é obrigatória para salvar' });
   }
   
-  if (!validateKV(report.kv)) {
-    errors.push('Tensão (kV) deve estar entre 0.1 e 50.0');
+  if ('kv' in report && (!report.kv || report.kv <= 0)) {
+    errors.push({ field: 'kv', message: 'Tensão deve ser maior que zero para salvar' });
   }
   
-  if (!validateTimeSeries(report.readings)) {
-    errors.push('Série de tempos inválida');
+  // Validar que tem dados válidos
+  if ('readings' in report && (!report.readings || report.readings.length === 0)) {
+    errors.push({ field: 'readings', message: 'Relatório deve ter leituras para salvar' });
   }
   
-  // Validações de readings
-  report.readings.forEach((reading, index) => {
-    if (!validateResistance(reading.resistance)) {
-      errors.push(`Resistência ${index + 1} inválida`);
-    }
-  });
-  
-  // Avisos para campos opcionais
-  if (report.tag && !validateTag(report.tag)) {
-    warnings.push('Tag muito longa (máximo 50 caracteres)');
-  }
-  
-  if (report.client && !validateClient(report.client)) {
-    warnings.push('Cliente muito longo (máximo 100 caracteres)');
-  }
-  
-  return { errors, warnings, isValid: errors.length === 0 };
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
 ### Número de Relatório
 ```typescript
-function validateReportNumber(number: string): boolean {
-  // Formato: REL-YYYY-XXXX (ex: REL-2024-0001)
-  const pattern = /^REL-\d{4}-\d{4}$/;
-  return pattern.test(number);
+// Validação de número de relatório
+function validateReportNumber(number: string): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (!number || number.trim() === '') {
+    errors.push({ field: 'number', message: 'Número do relatório é obrigatório' });
+  }
+  
+  if (number.length > 20) {
+    errors.push({ field: 'number', message: 'Número do relatório deve ter no máximo 20 caracteres' });
+  }
+  
+  if (!/^[A-Za-z0-9\-\_]+$/.test(number)) {
+    errors.push({ field: 'number', message: 'Número do relatório deve conter apenas letras, números, hífens e underscores' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
-## 🔧 Validações de Parâmetros
+## Validações de Parâmetros
 
 ### Limite OVRG
 ```typescript
-function validateOVRGLimit(limit: number): boolean {
-  return limit > 0 && limit <= 100; // Entre 0 e 100 TΩ
+// Validação do limite OVRG
+function validateOVRGLimit(limit: number): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (typeof limit !== 'number' || isNaN(limit)) {
+    errors.push({ field: 'ovrgLimit', message: 'Limite OVRG deve ser um número válido' });
+  } else if (limit < 1 || limit > 100) {
+    errors.push({ field: 'ovrgLimit', message: 'Limite OVRG deve estar entre 1 e 100 TΩ' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
 ### Perfis de Categoria
 ```typescript
-function validateCategoryProfiles(profiles: Record<string, CategoryProfile>): boolean {
-  const requiredCategories = ['cabo', 'motor', 'bomba', 'trafo', 'outro'];
+// Validação de perfis de categoria
+function validateCategoryProfile(profile: CategoryProfile): ValidationResult {
+  const errors: ValidationError[] = [];
   
-  // Verificar se todas as categorias estão presentes
-  for (const category of requiredCategories) {
-    if (!profiles[category]) return false;
-    if (!validateProfile(profiles[category])) return false;
+  // Validar baseG
+  if (!Array.isArray(profile.baseG) || profile.baseG.length !== 2) {
+    errors.push({ field: 'baseG', message: 'baseG deve ser um array com 2 elementos' });
+  } else {
+    const [min, max] = profile.baseG;
+    if (min >= max) {
+      errors.push({ field: 'baseG', message: 'baseG[0] deve ser menor que baseG[1]' });
+    }
   }
   
-  return true;
+  // Validar growth
+  if (!Array.isArray(profile.growth) || profile.growth.length !== 2) {
+    errors.push({ field: 'growth', message: 'growth deve ser um array com 2 elementos' });
+  } else {
+    const [min, max] = profile.growth;
+    if (min >= max || min < 1) {
+      errors.push({ field: 'growth', message: 'growth deve ter valores entre 1 e max, com min < max' });
+    }
+  }
+  
+  // Validar minGoodG
+  if (typeof profile.minGoodG !== 'number' || profile.minGoodG <= 0) {
+    errors.push({ field: 'minGoodG', message: 'minGoodG deve ser um número positivo' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
-## 📊 Validações de Estatísticas
+## Validações de Estatísticas
 
 ### KPIs
 ```typescript
-function validateKPIs(stats: KPIs): boolean {
-  // Total deve ser >= 0
-  if (stats.total < 0) return false;
+// Validação de KPIs
+function validateKPIs(stats: DashboardStats): ValidationResult {
+  const errors: ValidationError[] = [];
   
-  // Percentuais devem somar aproximadamente 100%
-  const totalPercent = stats.percentBom + stats.percentAceitavel + stats.percentReprovado;
-  if (Math.abs(totalPercent - 100) > 1) return false; // Tolerância de 1%
+  // Validar que totais são números não-negativos
+  if (stats.totalReports < 0) {
+    errors.push({ field: 'totalReports', message: 'Total de relatórios não pode ser negativo' });
+  }
   
-  return true;
+  if (stats.totalEquipment < 0) {
+    errors.push({ field: 'totalEquipment', message: 'Total de equipamentos não pode ser negativo' });
+  }
+  
+  if (stats.totalTests < 0) {
+    errors.push({ field: 'totalTests', message: 'Total de testes não pode ser negativo' });
+  }
+  
+  // Validar distribuição de resultados
+  const totalResults = stats.resultsDistribution.BOM + 
+                      stats.resultsDistribution.ACEITÁVEL + 
+                      stats.resultsDistribution.REPROVADO;
+  
+  if (totalResults !== stats.totalTests) {
+    errors.push({ field: 'resultsDistribution', message: 'Soma dos resultados deve igual ao total de testes' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
 }
 ```
 
-## 🚨 Tratamento de Erros
+## Tratamento de Erros
 
 ### Tipos de Erro
 ```typescript
 enum ValidationErrorType {
-  REQUIRED_FIELD = 'REQUIRED_FIELD',
-  INVALID_FORMAT = 'INVALID_FORMAT',
-  OUT_OF_RANGE = 'OUT_OF_RANGE',
-  INVALID_VALUE = 'INVALID_VALUE'
+  REQUIRED = 'required',
+  FORMAT = 'format',
+  RANGE = 'range',
+  CORRELATION = 'correlation',
+  CONSISTENCY = 'consistency',
+  AI_CONFIDENCE = 'ai_confidence'
 }
 
 interface ValidationError {
-  type: ValidationErrorType;
   field: string;
   message: string;
-  value?: any;
+  type?: ValidationErrorType;
+  severity?: 'error' | 'warning' | 'info';
 }
 ```
 
 ### Mensagens de Erro
 ```typescript
+// Mensagens de erro padronizadas
 const ERROR_MESSAGES = {
-  REQUIRED_CATEGORY: 'Categoria é obrigatória',
-  REQUIRED_KV: 'Tensão (kV) é obrigatória',
-  INVALID_KV: 'Tensão deve estar entre 0.1 e 50.0 kV',
-  INVALID_CATEGORY: 'Categoria inválida',
-  INVALID_RESISTANCE: 'Formato de resistência inválido',
-  INVALID_TIME_SERIES: 'Série de tempos inválida',
-  OVRG_LIMIT_EXCEEDED: 'Valor excede limite OVRG'
+  required: (field: string) => `${field} é obrigatório`,
+  format: (field: string, format: string) => `${field} deve estar no formato: ${format}`,
+  range: (field: string, min: number, max: number) => `${field} deve estar entre ${min} e ${max}`,
+  correlation: (phases: string[]) => `Correlação entre fases ${phases.join(' e ')} está fora do esperado`,
+  consistency: (field: string) => `${field} está inconsistente com valores relacionados`,
+  ai_confidence: (confidence: number, threshold: number) => 
+    `Confiança da IA (${confidence.toFixed(2)}) está abaixo do threshold (${threshold})`
 };
 ```
 
-## ✅ Testes de Validação
+## Testes de Validação
 
-### Cenários de Teste
+### Exemplos de Testes Unitários
 ```typescript
-describe('Validation Rules', () => {
-  test('should validate valid category', () => {
-    expect(validateCategory('cabo')).toBe(true);
-    expect(validateCategory('invalid')).toBe(false);
+// Teste de validação de categoria
+describe('validateCategory', () => {
+  it('deve aceitar categorias válidas', () => {
+    expect(validateCategory('cabo').isValid).toBe(true);
+    expect(validateCategory('motor').isValid).toBe(true);
   });
   
-  test('should validate valid KV', () => {
-    expect(validateKV(1.00)).toBe(true);
-    expect(validateKV(0.05)).toBe(false);
-    expect(validateKV(100)).toBe(false);
+  it('deve rejeitar categorias inválidas', () => {
+    expect(validateCategory('invalido').isValid).toBe(false);
+  });
+});
+
+// Teste de validação de tensão
+describe('validateVoltage', () => {
+  it('deve aceitar tensões válidas', () => {
+    expect(validateVoltage(1.0).isValid).toBe(true);
+    expect(validateVoltage(10.5).isValid).toBe(true);
   });
   
-  test('should format resistance correctly', () => {
-    expect(formatResistance(500)).toBe('500Ω');
-    expect(formatResistance(1500)).toBe('1.50kΩ');
-    expect(formatResistance(1.5e9)).toBe('1.50GΩ');
-    expect(formatResistance(6e12)).toBe('0.99 OVRG');
+  it('deve rejeitar tensões fora do range', () => {
+    expect(validateVoltage(0.05).isValid).toBe(false);
+    expect(validateVoltage(100).isValid).toBe(false);
+  });
+});
+
+// Teste de validação multi-fase
+describe('validatePhaseConfiguration', () => {
+  it('deve aceitar configuração válida', () => {
+    const config: MultiPhaseConfig = {
+      phases: { names: ['R', 'S', 'T'], count: 3 },
+      // ... outros campos
+    };
+    expect(validatePhaseConfiguration(config).isValid).toBe(true);
   });
   
-  test('should calculate DAI correctly', () => {
-    const readings = [
-      { time: '00:15', kv: '1.00', resistance: '1.00GΩ' },
-      { time: '00:30', kv: '1.00', resistance: '1.10GΩ' },
-      { time: '00:45', kv: '1.00', resistance: '1.20GΩ' },
-      { time: '01:00', kv: '1.00', resistance: '1.30GΩ' }
-    ];
-    
-    expect(calculateDAI(readings)).toBe('1.18');
+  it('deve rejeitar fases duplicadas', () => {
+    const config: MultiPhaseConfig = {
+      phases: { names: ['R', 'R', 'T'], count: 3 },
+      // ... outros campos
+    };
+    expect(validatePhaseConfiguration(config).isValid).toBe(false);
   });
 });
 ```
 
 ---
 
-**Nota**: Estas regras de validação garantem a integridade dos dados mantendo a flexibilidade necessária para o uso rápido do sistema.
+**Nota**: Este sistema de validação garante a integridade dos dados e a qualidade dos relatórios gerados, mantendo flexibilidade para diferentes cenários de uso.
