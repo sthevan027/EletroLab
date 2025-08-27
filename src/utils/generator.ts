@@ -1,81 +1,345 @@
-import { formatResistance } from './units';
+/**
+ * Gerador de séries IR para relatórios Megger
+ */
 
-export type Category = 'cabo' | 'motor' | 'bomba' | 'trafo' | 'outro';
-export type CupomLine = { t: string; kv: string; ohms: string };
-export type CupomReport = {
-  header: { model?: string; unit_id?: string; test_no: number; timestamp: string };
-  lines: CupomLine[];
-  dai: string; // "1.98" | "Undefined"
-};
+import { Category, CategoryProfile, IRReport } from '../types';
+import { formatResistance, formatVoltage, getStandardTimeSeries, calculateDAI } from './units';
+import { dbUtils } from '../db/database';
 
-const times = ['00:15', '00:30', '00:45', '01:00'];
-const rnd = (a: number, b: number) => a + Math.random() * (b - a);
-
-const profiles = {
-  cabo: { baseG: [5, 20], growth: [1.05, 1.18] },
-  motor: { baseG: [1, 5], growth: [1.03, 1.12] },
-  bomba: { baseG: [1, 5], growth: [1.03, 1.12] },
-  trafo: { baseG: [10, 50], growth: [1.05, 1.18] },
-  outro: { baseG: [0.5, 5], growth: [1.02, 1.10] }
-} as const;
-
-function parseFormatted(s: string): number | undefined {
-  if (s.includes('OVRG')) return undefined;
-  if (s.endsWith('TΩ')) return Number(s.replace('TΩ', '')) * 1e12;
-  if (s.endsWith('GΩ')) return Number(s.replace('GΩ', '')) * 1e9;
-  if (s.endsWith('MΩ')) return Number(s.replace('MΩ', '')) * 1e6;
-  if (s.endsWith('kΩ')) return Number(s.replace('kΩ', '')) * 1e3;
-  if (s.endsWith('Ω')) return Number(s.replace('Ω', ''));
-  return Number(s);
+/**
+ * Opções para geração de série IR
+ */
+export interface IRGenerationOptions {
+  category: Category;
+  kv?: number;
+  limitTOhm?: number;
+  tag?: string;
+  client?: string;
+  site?: string;
+  operator?: string;
+  manufacturer?: string;
+  model?: string;
 }
 
-/** Série IR (R15/30/45/60). Cabo: força >= 5 GΩ. OVRG >= 5 TΩ. */
-export function gerarSerieIR(opts: {
-  category: Category;
-  kv?: number; // default 1.00
-  limitTOhm?: number; // default 5 TΩ
-  model?: string;
-  unit_id?: string; // opcionais
-}): CupomReport {
-  const { category, kv = 1.0, limitTOhm = 5, model, unit_id } = opts;
-  const p = profiles[category];
+/**
+ * Resultado da geração de série IR
+ */
+export interface IRGenerationResult {
+  readings: {
+    time: string;
+    kv: string;
+    resistance: string;
+  }[];
+  dai: string;
+}
 
-  let r15G = rnd(p.baseG[0], p.baseG[1]);
-  let r30G = r15G * rnd(p.growth[0], p.growth[1]);
-  let r45G = r30G * rnd(p.growth[0], p.growth[1]);
-  let r60G = r45G * rnd(p.growth[0], p.growth[1]);
+/**
+ * Gera uma série IR baseada na categoria e configurações
+ */
+export async function generateIRSeries(opts: IRGenerationOptions): Promise<IRGenerationResult> {
+  return await gerarSerieIR(opts);
+}
 
-  if (category === 'cabo') {
-    r15G = Math.max(r15G, 5);
-    r30G = Math.max(r30G, 5);
-    r45G = Math.max(r45G, 5);
-    r60G = Math.max(r60G, 5);
-  }
+/**
+ * Gera uma série IR baseada na categoria e configurações
+ */
+export async function gerarSerieIR(opts: IRGenerationOptions): Promise<IRGenerationResult> {
+  const {
+    category,
+    kv = 1.0,
+    limitTOhm = 5,
+    tag,
+    client,
+    site,
+    operator,
+    manufacturer,
+    model
+  } = opts;
 
-  const asOhms = (g: number) => g * 1e9;
-  const kvStr = kv.toFixed(2);
+  // Buscar perfil da categoria
+  const profile = await dbUtils.getCategoryProfile(category);
+  
+  // Gerar valores baseados no perfil
+  const readings = generateReadingsFromProfile(profile, kv, limitTOhm);
+  
+  // Calcular DAI
+  const dai = calculateDAI(readings);
+  
+  return { readings, dai };
+}
 
-  const lines: CupomLine[] = [
-    { t: times[0], kv: kvStr, ohms: formatResistance(asOhms(r15G), limitTOhm) },
-    { t: times[1], kv: kvStr, ohms: formatResistance(asOhms(r30G), limitTOhm) },
-    { t: times[2], kv: kvStr, ohms: formatResistance(asOhms(r45G), limitTOhm) },
-    { t: times[3], kv: kvStr, ohms: formatResistance(asOhms(r60G), limitTOhm) }
-  ];
+/**
+ * Gera leituras baseadas no perfil da categoria
+ */
+function generateReadingsFromProfile(
+  profile: CategoryProfile,
+  kv: number,
+  limitTOhm: number
+): { time: string; kv: string; resistance: string }[] {
+  const times = getStandardTimeSeries();
+  const { min: baseMin, max: baseMax, decay } = profile.baseResistance;
+  
+  // Valor inicial aleatório dentro da faixa base
+  const baseValue = baseMin + Math.random() * (baseMax - baseMin);
+  let currentValue = baseValue; // Já está em ohms
+  
+  const readings = times.map((time, index) => {
+    // Aplicar decaimento se não for a primeira leitura
+    if (index > 0) {
+      const decayFactor = 1 - (decay * Math.random() * 0.5); // Variação do decaimento
+      currentValue *= decayFactor;
+    }
+    
+    return {
+      time,
+      kv: formatVoltage(kv),
+      resistance: formatResistance(currentValue, limitTOhm)
+    };
+  });
+  
+  return readings;
+}
 
-  const n30 = parseFormatted(lines[1].ohms);
-  const n60 = parseFormatted(lines[3].ohms);
-  const dai = !n30 || !n60 ? 'Undefined' : (n60 / n30).toFixed(2);
-
+/**
+ * Gera um relatório IR completo
+ */
+export async function generateIRReport(opts: IRGenerationOptions): Promise<IRReport> {
+  const result = await gerarSerieIR(opts);
+  
   return {
-    header: {
-      model,
-      unit_id,
-      test_no: Math.floor(1000 + Math.random() * 9000),
-      timestamp: new Date().toISOString()
-    },
-    lines,
-    dai
+    id: crypto.randomUUID(),
+    category: opts.category,
+    tag: opts.tag,
+    kv: opts.kv || 1.0,
+    client: opts.client,
+    site: opts.site,
+    operator: opts.operator,
+    manufacturer: opts.manufacturer,
+    model: opts.model,
+    readings: result.readings,
+    dai: result.dai,
+    createdAt: new Date(),
+    isSaved: false
   };
+}
+
+/**
+ * Gera múltiplos relatórios IR com correlações (para multi-fase)
+ */
+export async function generateCorrelatedIRReports(
+  baseOptions: IRGenerationOptions,
+  count: number,
+  correlationFactor: number = 0.8
+): Promise<IRReport[]> {
+  // Gerar relatório base
+  const baseReport = await generateIRReport(baseOptions);
+  const baseValues = baseReport.readings.map(r => {
+    const value = parseResistance(r.resistance);
+    return value || 0;
+  });
+  
+  const reports: IRReport[] = [baseReport];
+  
+  // Gerar relatórios correlacionados
+  for (let i = 1; i < count; i++) {
+    const correlatedValues = baseValues.map(baseValue => {
+      // Aplicar variação correlacionada
+      const variation = 0.8 + Math.random() * 0.4; // ±20%
+      return baseValue * variation;
+    });
+    
+    const readings = baseReport.readings.map((reading, index) => ({
+      ...reading,
+      resistance: formatResistance(correlatedValues[index], baseOptions.limitTOhm || 5)
+    }));
+    
+    const dai = calculateDAI(readings);
+    
+    reports.push({
+      ...baseReport,
+      id: crypto.randomUUID(),
+      readings,
+      dai
+    });
+  }
+  
+  return reports;
+}
+
+/**
+ * Ajusta valores baseado em condições ambientais
+ */
+export function adjustForEnvironment(
+  readings: { time: string; kv: string; resistance: string }[],
+  temperature: number,
+  humidity: number,
+  quality: 'excellent' | 'good' | 'acceptable'
+): { time: string; kv: string; resistance: string }[] {
+  // Fatores de ajuste baseados na qualidade do ambiente
+  const qualityFactors = {
+    excellent: 1.0,
+    good: 0.9,
+    acceptable: 0.7
+  };
+  
+  // Fator de temperatura (diminui com temperatura alta)
+  const tempFactor = Math.max(0.5, 1 - (temperature - 20) * 0.02);
+  
+  // Fator de umidade (diminui com umidade alta)
+  const humidityFactor = Math.max(0.6, 1 - (humidity - 50) * 0.005);
+  
+  const totalFactor = qualityFactors[quality] * tempFactor * humidityFactor;
+  
+  return readings.map(reading => {
+    const value = parseResistance(reading.resistance);
+    if (value !== undefined) {
+      const adjustedValue = value * totalFactor;
+      return {
+        ...reading,
+        resistance: formatResistance(adjustedValue)
+      };
+    }
+    return reading;
+  });
+}
+
+/**
+ * Valida se os valores gerados estão dentro dos limites esperados
+ */
+export function validateGeneratedValues(
+  readings: { resistance: string }[],
+  category: Category,
+  minGoodG: number
+): { isValid: boolean; issues: string[] } {
+  const issues: string[] = [];
+  
+  readings.forEach((reading, index) => {
+    const value = parseResistance(reading.resistance);
+    if (value !== undefined) {
+      const valueG = value / 1e9;
+      
+      if (valueG < minGoodG * 0.3) {
+        issues.push(`Leitura ${index + 1} (${reading.resistance}) está muito baixa para ${category}`);
+      }
+    }
+  });
+  
+  return {
+    isValid: issues.length === 0,
+    issues
+  };
+}
+
+/**
+ * Aprende com valores históricos para melhorar geração futura
+ */
+export async function learnFromHistory(
+  category: Category,
+  historicalValues: number[][]
+): Promise<void> {
+  if (historicalValues.length === 0) return;
+  
+  // Calcular médias e desvios
+  const averages = historicalValues[0].map((_, index) => {
+    const values = historicalValues.map(row => row[index]);
+    return values.reduce((sum, val) => sum + val, 0) / values.length;
+  });
+  
+  const correlations = historicalValues[0].map((_, index) => {
+    if (index === 0) return 1;
+    const currentValues = historicalValues.map(row => row[index]);
+    const previousValues = historicalValues.map(row => row[index - 1]);
+    
+    // Calcular correlação simples
+    const correlation = calculateCorrelation(previousValues, currentValues);
+    return correlation;
+  });
+  
+  // Salvar aprendizado
+  await dbUtils.saveAILearningHistory({
+    category,
+    phaseCount: 1,
+    phaseNames: ['single'],
+    baseValues: averages,
+    correlations: {
+      phaseToPhase: [],
+      phaseToGround: []
+    },
+    accuracy: 0.9,
+    confidence: 0.8,
+    usedCount: 1
+  });
+}
+
+/**
+ * Calcula correlação entre dois arrays de valores
+ */
+function calculateCorrelation(x: number[], y: number[]): number {
+  if (x.length !== y.length || x.length === 0) return 0;
+  
+  const n = x.length;
+  const sumX = x.reduce((sum, val) => sum + val, 0);
+  const sumY = y.reduce((sum, val) => sum + val, 0);
+  const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+  const sumX2 = x.reduce((sum, val) => sum + val * val, 0);
+  const sumY2 = y.reduce((sum, val) => sum + val * val, 0);
+  
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+  
+  return denominator === 0 ? 0 : numerator / denominator;
+}
+
+/**
+ * Gera valores baseados em aprendizado histórico
+ */
+export async function generateWithAI(
+  category: Category,
+  options: IRGenerationOptions
+): Promise<IRGenerationResult> {
+  // Buscar histórico de aprendizado
+  const history = await dbUtils.getAILearningHistory(category);
+  
+  if (history.length === 0) {
+    // Sem histórico, usar geração padrão
+    return gerarSerieIR(options);
+  }
+  
+  // Usar o histórico mais recente
+  const latestHistory = history[0];
+  
+  // Gerar valores baseados no histórico
+  const readings = generateReadingsFromHistory(latestHistory, options.kv || 1.0, options.limitTOhm || 5);
+  const dai = calculateDAI(readings);
+  
+  return { readings, dai };
+}
+
+/**
+ * Gera leituras baseadas em histórico de IA
+ */
+function generateReadingsFromHistory(
+  history: any,
+  kv: number,
+  limitTOhm: number
+): { time: string; kv: string; resistance: string }[] {
+  const times = getStandardTimeSeries();
+  const baseValues = history.baseValues;
+  
+  return times.map((time, index) => {
+    let value = baseValues[index] || baseValues[0] || 5e9;
+    
+    // Aplicar variação baseada na confiança
+    const confidence = history.confidence || 0.8;
+    const variation = 1 + (Math.random() - 0.5) * (1 - confidence) * 0.4;
+    value *= variation;
+    
+    return {
+      time,
+      kv: formatVoltage(kv),
+      resistance: formatResistance(value, limitTOhm)
+    };
+  });
 }
 
 

@@ -1,249 +1,635 @@
-import { TestType, TestResult, TestLimit, EquipmentCategory, ValidationResult, ValidationError } from '../types';
+/**
+ * Funções de validação para o EletriLab Ultra-MVP
+ */
 
-// Funções de classificação de testes
-export function classifyMegger(value: number, limits: TestLimit): TestResult {
-  if (value >= limits.good) {
-    return 'BOM';
-  } else if (value >= limits.min) {
-    return 'ACEITÁVEL';
-  } else {
-    return 'REPROVADO';
-  }
-}
+import { Category, ValidationResult, ValidationError, MultiPhaseConfig } from '../types';
+import { parseResistance } from './units';
 
-export function classifyHipot(value: number, limits: TestLimit): TestResult {
-  if (value >= limits.good) {
-    return 'BOM';
-  } else if (value >= limits.min) {
-    return 'ACEITÁVEL';
-  } else {
-    return 'REPROVADO';
-  }
-}
-
-export function classifyTest(testType: TestType, value: number, limits: TestLimit): TestResult {
-  switch (testType) {
-    case 'megger':
-      return classifyMegger(value, limits);
-    case 'hipot':
-      return classifyHipot(value, limits);
-    default:
-      return 'REPROVADO';
-  }
-}
-
-// Funções de geração de valores aleatórios
-export function generateRandomMeggerValue(_category: EquipmentCategory): number {
-  const random = Math.random();
+/**
+ * Validação de categoria
+ */
+export function validateCategory(category: string): ValidationResult {
+  const validCategories: Category[] = ['cabo', 'motor', 'bomba', 'trafo', 'outro'];
   
-  // Distribuição de probabilidade conforme documentação
-  if (random < 0.60) {
-    // 60% - BOM: valores entre 500 e 10.000 MΩ
-    return Math.random() * (10000 - 500) + 500;
-  } else if (random < 0.85) {
-    // 25% - ACEITÁVEL: valores entre 50 e 500 MΩ
-    return Math.random() * (500 - 50) + 50;
-  } else {
-    // 15% - REPROVADO: valores entre 0.1 e 50 MΩ
-    return Math.random() * (50 - 0.1) + 0.1;
-  }
+  return {
+    isValid: validCategories.includes(category as Category),
+    errors: validCategories.includes(category as Category) ? [] : [
+      { 
+        field: 'category', 
+        message: 'Categoria deve ser: cabo, motor, bomba, trafo, outro',
+        type: 'required'
+      }
+    ]
+  };
 }
 
-export function generateRandomHipotValue(_category: EquipmentCategory): number {
-  const random = Math.random();
+/**
+ * Validação de tensão
+ */
+export function validateVoltage(kv: number): ValidationResult {
+  const errors: ValidationError[] = [];
   
-  // Distribuição de probabilidade conforme documentação
-  if (random < 0.60) {
-    // 60% - BOM: valores entre 2000 e 5000 V
-    return Math.random() * (5000 - 2000) + 2000;
-  } else if (random < 0.85) {
-    // 25% - ACEITÁVEL: valores entre 1000 e 2000 V
-    return Math.random() * (2000 - 1000) + 1000;
+  if (typeof kv !== 'number' || isNaN(kv)) {
+    errors.push({ 
+      field: 'kv', 
+      message: 'Tensão deve ser um número válido',
+      type: 'format'
+    });
+  } else if (kv < 0.1 || kv > 50) {
+    errors.push({ 
+      field: 'kv', 
+      message: 'Tensão deve estar entre 0.1 e 50 kV',
+      type: 'range'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação de tag (opcional)
+ */
+export function validateTag(tag?: string): ValidationResult {
+  if (!tag) return { isValid: true, errors: [] };
+  
+  const errors: ValidationError[] = [];
+  if (tag.length > 50) {
+    errors.push({ 
+      field: 'tag', 
+      message: 'Tag deve ter no máximo 50 caracteres',
+      type: 'format'
+    });
+  }
+  if (!/^[a-zA-Z0-9\-\_\s]+$/.test(tag)) {
+    errors.push({ 
+      field: 'tag', 
+      message: 'Tag deve conter apenas letras, números, hífens e underscores',
+      type: 'format'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação de campos opcionais
+ */
+export function validateOptionalFields(fields: {
+  client?: string;
+  site?: string;
+  operator?: string;
+  manufacturer?: string;
+  model?: string;
+}): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value && value.length > 100) {
+      errors.push({ 
+        field: key, 
+        message: `${key} deve ter no máximo 100 caracteres`,
+        type: 'format'
+      });
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação da série de tempos
+ */
+export function validateTimeSeries(readings: any[]): ValidationResult {
+  const expectedTimes = ['00:15', '00:30', '00:45', '01:00'];
+  const errors: ValidationError[] = [];
+  
+  if (readings.length !== 4) {
+    errors.push({ 
+      field: 'readings', 
+      message: 'Deve ter exatamente 4 leituras',
+      type: 'format'
+    });
+  }
+  
+  readings.forEach((reading, index) => {
+    if (reading.time !== expectedTimes[index]) {
+      errors.push({ 
+        field: 'readings', 
+        message: `Tempo ${index + 1} deve ser ${expectedTimes[index]}`,
+        type: 'format'
+      });
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação da formatação de resistência
+ */
+export function validateResistanceFormat(resistance: string): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (resistance === '0.99 OVRG') {
+    return { isValid: true, errors: [] };
+  }
+  
+  const patterns = [
+    /^\d+Ω$/,           // 500Ω
+    /^\d+\.\d{2}kΩ$/,   // 2.50kΩ
+    /^\d+\.\d{2}MΩ$/,   // 15.30MΩ
+    /^\d+\.\d{2}GΩ$/,   // 5.23GΩ
+    /^\d+\.\d{2}TΩ$/    // 2.15TΩ
+  ];
+  
+  const isValid = patterns.some(pattern => pattern.test(resistance));
+  if (!isValid) {
+    errors.push({ 
+      field: 'resistance', 
+      message: 'Formato de resistência inválido. Use: 500Ω, 2.50kΩ, 15.30MΩ, 5.23GΩ, 2.15TΩ ou 0.99 OVRG',
+      type: 'format'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação de valores de resistência
+ */
+export function validateResistanceValue(resistance: string, category: string): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (resistance === '0.99 OVRG') {
+    return { isValid: true, errors: [] };
+  }
+  
+  const value = parseResistance(resistance);
+  if (value === undefined) {
+    errors.push({ 
+      field: 'resistance', 
+      message: 'Não foi possível interpretar o valor de resistência',
+      type: 'format'
+    });
+    return { isValid: false, errors };
+  }
+  
+  // Validações específicas por categoria
+  if (category === 'cabo') {
+    const valueG = value / 1e9;
+    if (valueG < 5) {
+      errors.push({ 
+        field: 'resistance', 
+        message: 'Para cabos, resistência deve ser ≥ 5 GΩ',
+        type: 'range'
+      });
+    }
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação da configuração de fases
+ */
+export function validatePhaseConfiguration(config: MultiPhaseConfig): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  // Validar nomes das fases
+  if (!config.phases.names || config.phases.names.length < 2) {
+    errors.push({ 
+      field: 'phases', 
+      message: 'Deve ter pelo menos 2 fases',
+      type: 'required'
+    });
+  }
+  
+  if (config.phases.names.length > 20) {
+    errors.push({ 
+      field: 'phases', 
+      message: 'Máximo de 20 fases permitido',
+      type: 'range'
+    });
+  }
+  
+  // Validar nomes únicos
+  const uniqueNames = new Set(config.phases.names);
+  if (uniqueNames.size !== config.phases.names.length) {
+    errors.push({ 
+      field: 'phases', 
+      message: 'Nomes das fases devem ser únicos',
+      type: 'format'
+    });
+  }
+  
+  // Validar formato dos nomes
+  config.phases.names.forEach((name, index) => {
+    if (!/^[A-Za-z0-9]+$/.test(name)) {
+      errors.push({ 
+        field: 'phases', 
+        message: `Nome da fase ${index + 1} deve conter apenas letras e números`,
+        type: 'format'
+      });
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação de combinações fase/fase
+ */
+export function validatePhaseCombinations(
+  combinations: string[][], 
+  phaseNames: string[]
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (combinations.length === 0) {
+    errors.push({ 
+      field: 'combinations', 
+      message: 'Deve ter pelo menos uma combinação',
+      type: 'required'
+    });
+  }
+  
+  // Validar cada combinação
+  combinations.forEach((combination, index) => {
+    if (combination.length !== 2) {
+      errors.push({ 
+        field: 'combinations', 
+        message: `Combinação ${index + 1} deve ter exatamente 2 fases`,
+        type: 'format'
+      });
+    }
+    
+    combination.forEach(phase => {
+      if (!phaseNames.includes(phase)) {
+        errors.push({ 
+          field: 'combinations', 
+          message: `Fase '${phase}' não existe na configuração`,
+          type: 'format'
+        });
+      }
+    });
+    
+    // Validar que não é a mesma fase
+    if (combination[0] === combination[1]) {
+      errors.push({ 
+        field: 'combinations', 
+        message: `Combinação ${index + 1} não pode ter a mesma fase duas vezes`,
+        type: 'format'
+      });
+    }
+  });
+  
+  // Validar combinações únicas
+  const uniqueCombinations = new Set(
+    combinations.map(c => c.sort().join('/'))
+  );
+  if (uniqueCombinations.size !== combinations.length) {
+    errors.push({ 
+      field: 'combinations', 
+      message: 'Combinações devem ser únicas',
+      type: 'format'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação do nome da massa
+ */
+export function validateGroundName(groundName: string, phaseNames: string[]): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (!groundName || groundName.trim() === '') {
+    errors.push({ 
+      field: 'groundName', 
+      message: 'Nome da massa é obrigatório',
+      type: 'required'
+    });
+  }
+  
+  if (groundName.length > 10) {
+    errors.push({ 
+      field: 'groundName', 
+      message: 'Nome da massa deve ter no máximo 10 caracteres',
+      type: 'range'
+    });
+  }
+  
+  if (!/^[A-Za-z0-9]+$/.test(groundName)) {
+    errors.push({ 
+      field: 'groundName', 
+      message: 'Nome da massa deve conter apenas letras e números',
+      type: 'format'
+    });
+  }
+  
+  if (phaseNames.includes(groundName)) {
+    errors.push({ 
+      field: 'groundName', 
+      message: 'Nome da massa não pode ser igual ao nome de uma fase',
+      type: 'format'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação de correlações entre fases
+ */
+export function validatePhaseCorrelations(
+  baseValues: number[], 
+  phaseToPhaseValues: number[][],
+  threshold: number = 0.8
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  // Validar que valores fase/fase são correlacionados com valores base
+  phaseToPhaseValues.forEach((values, index) => {
+    const phase1 = index % baseValues.length;
+    const phase2 = Math.floor(index / baseValues.length);
+    
+    if (phase1 !== phase2) {
+      const expectedCorrelation = (baseValues[phase1] + baseValues[phase2]) / 2;
+      const actualValue = values[0]; // Primeira leitura
+      
+      const correlation = Math.abs(actualValue - expectedCorrelation) / expectedCorrelation;
+      if (correlation > (1 - threshold)) {
+        errors.push({ 
+          field: 'correlations', 
+          message: `Correlação entre fases ${phase1 + 1} e ${phase2 + 1} está fora do esperado`,
+          type: 'correlation'
+        });
+      }
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação de consistência fase/massa
+ */
+export function validatePhaseToGroundConsistency(
+  baseValues: number[],
+  phaseToGroundValues: number[],
+  threshold: number = 0.7
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  phaseToGroundValues.forEach((value, index) => {
+    const baseValue = baseValues[index];
+    const expectedValue = baseValue * 0.8; // Fase/massa tipicamente 80% da fase
+    
+    const consistency = Math.abs(value - expectedValue) / expectedValue;
+    if (consistency > (1 - threshold)) {
+      errors.push({ 
+        field: 'phaseToGround', 
+        message: `Valor fase/massa ${index + 1} está inconsistente com valor base`,
+        type: 'consistency'
+      });
+    }
+  });
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação de confiança da IA
+ */
+export function validateAIConfidence(
+  confidence: number, 
+  threshold: number = 0.7
+): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (confidence < threshold) {
+    errors.push({ 
+      field: 'aiConfidence', 
+      message: `Confiança da IA (${confidence.toFixed(2)}) está abaixo do threshold (${threshold})`,
+      type: 'ai_confidence'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação para exportação PDF
+ */
+export function validatePDFExport(report: any): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (!report) {
+    errors.push({ 
+      field: 'report', 
+      message: 'Relatório é obrigatório para exportação',
+      type: 'required'
+    });
+  }
+  
+  // Validar que tem dados para exportar
+  if ('readings' in report && (!report.readings || report.readings.length === 0)) {
+    errors.push({ 
+      field: 'readings', 
+      message: 'Relatório deve ter leituras para exportar',
+      type: 'required'
+    });
+  }
+  
+  if ('reports' in report && (!report.reports || report.reports.length === 0)) {
+    errors.push({ 
+      field: 'reports', 
+      message: 'Relatório multi-fase deve ter sub-relatórios',
+      type: 'required'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação para exportação CSV
+ */
+export function validateCSVExport(report: any): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (!report) {
+    errors.push({ 
+      field: 'report', 
+      message: 'Relatório é obrigatório para exportação',
+      type: 'required'
+    });
+  }
+  
+  // Validar que tem dados estruturados
+  if ('readings' in report && (!report.readings || report.readings.length === 0)) {
+    errors.push({ 
+      field: 'readings', 
+      message: 'Relatório deve ter leituras para exportar',
+      type: 'required'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação para salvamento
+ */
+export function validateForSaving(report: any): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  // Validar campos obrigatórios para salvamento
+  if ('category' in report && !report.category) {
+    errors.push({ 
+      field: 'category', 
+      message: 'Categoria é obrigatória para salvar',
+      type: 'required'
+    });
+  }
+  
+  if ('kv' in report && (!report.kv || report.kv <= 0)) {
+    errors.push({ 
+      field: 'kv', 
+      message: 'Tensão deve ser maior que zero para salvar',
+      type: 'range'
+    });
+  }
+  
+  // Validar que tem dados válidos
+  if ('readings' in report && (!report.readings || report.readings.length === 0)) {
+    errors.push({ 
+      field: 'readings', 
+      message: 'Relatório deve ter leituras para salvar',
+      type: 'required'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação de número de relatório
+ */
+export function validateReportNumber(number: string): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (!number || number.trim() === '') {
+    errors.push({ 
+      field: 'number', 
+      message: 'Número do relatório é obrigatório',
+      type: 'required'
+    });
+  }
+  
+  if (number.length > 20) {
+    errors.push({ 
+      field: 'number', 
+      message: 'Número do relatório deve ter no máximo 20 caracteres',
+      type: 'range'
+    });
+  }
+  
+  if (!/^[A-Za-z0-9\-\_]+$/.test(number)) {
+    errors.push({ 
+      field: 'number', 
+      message: 'Número do relatório deve conter apenas letras, números, hífens e underscores',
+      type: 'format'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validação do limite OVRG
+ */
+export function validateOVRGLimit(limit: number): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (typeof limit !== 'number' || isNaN(limit)) {
+    errors.push({ 
+      field: 'ovrgLimit', 
+      message: 'Limite OVRG deve ser um número válido',
+      type: 'format'
+    });
+  } else if (limit < 1 || limit > 100) {
+    errors.push({ 
+      field: 'ovrgLimit', 
+      message: 'Limite OVRG deve estar entre 1 e 100 TΩ',
+      type: 'range'
+    });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Combina múltiplos resultados de validação
+ */
+export function combineValidationResults(...results: ValidationResult[]): ValidationResult {
+  const allErrors: ValidationError[] = [];
+  const allValid = results.every(result => result.isValid);
+  
+  results.forEach(result => {
+    allErrors.push(...result.errors);
+  });
+  
+  return {
+    isValid: allValid,
+    errors: allErrors
+  };
+}
+
+/**
+ * Filtra erros por tipo
+ */
+export function filterErrorsByType(errors: ValidationError[], type: string): ValidationError[] {
+  return errors.filter(error => error.type === type);
+}
+
+/**
+ * Filtra erros por severidade
+ */
+export function filterErrorsBySeverity(errors: ValidationError[], severity: string): ValidationError[] {
+  return errors.filter(error => error.severity === severity);
+}
+
+/**
+ * Validação de relatório IR completo
+ */
+export function validateIRReport(report: Partial<any>): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  // Validar categoria
+  if (!report.category) {
+    errors.push({ 
+      field: 'category', 
+      message: 'Categoria é obrigatória',
+      type: 'required'
+    });
   } else {
-    // 15% - REPROVADO: valores entre 500 e 1000 V
-    return Math.random() * (1000 - 500) + 500;
+    const categoryValidation = validateCategory(report.category);
+    errors.push(...categoryValidation.errors);
   }
-}
-
-export function generateRandomTestValue(testType: TestType, category: EquipmentCategory): number {
-  switch (testType) {
-    case 'megger':
-      return generateRandomMeggerValue(category);
-    case 'hipot':
-      return generateRandomHipotValue(category);
-    default:
-      return 0;
+  
+  // Validar tensão
+  if (report.kv !== undefined) {
+    const voltageValidation = validateVoltage(report.kv);
+    errors.push(...voltageValidation.errors);
   }
-}
-
-// Funções de validação
-export function validateEquipment(equipment: any): ValidationResult {
-  const errors: ValidationError[] = [];
-
-  if (!equipment.tag || equipment.tag.trim().length === 0) {
-    errors.push({ field: 'tag', message: 'Tag é obrigatória' });
+  
+  // Validar tag se fornecida
+  if (report.tag) {
+    const tagValidation = validateTag(report.tag);
+    errors.push(...tagValidation.errors);
   }
-
-  if (!equipment.category) {
-    errors.push({ field: 'category', message: 'Categoria é obrigatória' });
-  }
-
-  if (!equipment.description || equipment.description.trim().length === 0) {
-    errors.push({ field: 'description', message: 'Descrição é obrigatória' });
-  }
-
-  if (!equipment.location || equipment.location.trim().length === 0) {
-    errors.push({ field: 'location', message: 'Localização é obrigatória' });
-  }
-
-  if (!equipment.manufacturer || equipment.manufacturer.trim().length === 0) {
-    errors.push({ field: 'manufacturer', message: 'Fabricante é obrigatório' });
-  }
-
-  if (!equipment.model || equipment.model.trim().length === 0) {
-    errors.push({ field: 'model', message: 'Modelo é obrigatório' });
-  }
-
-  if (!equipment.serialNumber || equipment.serialNumber.trim().length === 0) {
-    errors.push({ field: 'serialNumber', message: 'Número de série é obrigatório' });
-  }
-
-  if (!equipment.installationDate) {
-    errors.push({ field: 'installationDate', message: 'Data de instalação é obrigatória' });
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-
-export function validateReport(report: any): ValidationResult {
-  const errors: ValidationError[] = [];
-
-  if (!report.number || report.number.trim().length === 0) {
-    errors.push({ field: 'number', message: 'Número do relatório é obrigatório' });
-  }
-
-  if (!report.date) {
-    errors.push({ field: 'date', message: 'Data é obrigatória' });
-  }
-
-  if (!report.client || report.client.trim().length === 0) {
-    errors.push({ field: 'client', message: 'Cliente é obrigatório' });
-  }
-
-  if (!report.location || report.location.trim().length === 0) {
-    errors.push({ field: 'location', message: 'Local é obrigatório' });
-  }
-
-  if (!report.responsible || report.responsible.trim().length === 0) {
-    errors.push({ field: 'responsible', message: 'Responsável é obrigatório' });
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-
-export function validateTest(test: any): ValidationResult {
-  const errors: ValidationError[] = [];
-
-  if (!test.reportId) {
-    errors.push({ field: 'reportId', message: 'Relatório é obrigatório' });
-  }
-
-  if (!test.equipmentId) {
-    errors.push({ field: 'equipmentId', message: 'Equipamento é obrigatório' });
-  }
-
-  if (!test.testType) {
-    errors.push({ field: 'testType', message: 'Tipo de teste é obrigatório' });
-  }
-
-  if (test.value === undefined || test.value === null) {
-    errors.push({ field: 'value', message: 'Valor é obrigatório' });
-  } else if (typeof test.value !== 'number' || test.value < 0) {
-    errors.push({ field: 'value', message: 'Valor deve ser um número positivo' });
-  }
-
-  if (!test.performedBy || test.performedBy.trim().length === 0) {
-    errors.push({ field: 'performedBy', message: 'Responsável pelo teste é obrigatório' });
-  }
-
-  if (!test.performedAt) {
-    errors.push({ field: 'performedAt', message: 'Data do teste é obrigatória' });
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-
-// Funções de validação de limites
-export function validateTestLimits(limits: TestLimit): ValidationResult {
-  const errors: ValidationError[] = [];
-
-  if (limits.min === undefined || limits.min === null) {
-    errors.push({ field: 'min', message: 'Limite mínimo é obrigatório' });
-  } else if (typeof limits.min !== 'number' || limits.min < 0) {
-    errors.push({ field: 'min', message: 'Limite mínimo deve ser um número positivo' });
-  }
-
-  if (limits.good === undefined || limits.good === null) {
-    errors.push({ field: 'good', message: 'Limite bom é obrigatório' });
-  } else if (typeof limits.good !== 'number' || limits.good < 0) {
-    errors.push({ field: 'good', message: 'Limite bom deve ser um número positivo' });
-  }
-
-  if (limits.min !== undefined && limits.good !== undefined && limits.min >= limits.good) {
-    errors.push({ field: 'good', message: 'Limite bom deve ser maior que o limite mínimo' });
-  }
-
-  if (!limits.unit || limits.unit.trim().length === 0) {
-    errors.push({ field: 'unit', message: 'Unidade é obrigatória' });
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-
-// Funções de formatação
-export function formatTestValue(value: number, unit: string): string {
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}k${unit}`;
-  }
-  return `${value.toFixed(1)}${unit}`;
-}
-
-export function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('pt-BR');
-}
-
-export function formatDateTime(date: string): string {
-  return new Date(date).toLocaleString('pt-BR');
-}
-
-// Funções de validação de entrada
-export function validateNumericInput(value: string, min: number, max: number): boolean {
-  const numValue = parseFloat(value);
-  return !isNaN(numValue) && numValue >= min && numValue <= max;
-}
-
-export function validateRequired(value: string): boolean {
-  return value.trim().length > 0;
-}
-
-export function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-export function validatePhone(phone: string): boolean {
-  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-  return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
+  
+  return { isValid: errors.length === 0, errors };
 }

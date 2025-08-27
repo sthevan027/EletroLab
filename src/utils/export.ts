@@ -1,339 +1,478 @@
+/**
+ * Funções de exportação para relatórios IR
+ */
+
 import html2pdf from 'html2pdf.js';
-import { Report, Test, Equipment, ExportOptions } from '../types';
-import { formatDate, formatDateTime, formatTestValue } from './validation';
-import type { CupomReport } from './generator';
+import { IRReport, MultiPhaseReport, ExportOptions } from '../types';
 
-// Função para exportar relatório em PDF
-export async function exportReportToPDF(
-  report: Report,
-  tests: Test[],
-  equipment: Equipment[],
-  options: ExportOptions
-): Promise<void> {
-  try {
-    // Criar elemento HTML para o PDF
-    const pdfElement = document.createElement('div');
-    pdfElement.className = 'pdf-container';
-    pdfElement.style.cssText = `
-      font-family: 'Inter', sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      background: white;
-      color: black;
-    `;
-
-    // Cabeçalho do relatório
-    const header = document.createElement('div');
-    header.innerHTML = `
-      <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3b82f6; padding-bottom: 20px;">
-        <h1 style="color: #3b82f6; margin: 0; font-size: 24px; font-weight: 600;">EletriLab</h1>
-        <h2 style="color: #1f2937; margin: 10px 0 0 0; font-size: 18px; font-weight: 500;">Relatório de Ensaios Elétricos</h2>
-      </div>
-    `;
-    pdfElement.appendChild(header);
-
-    // Informações do relatório
-    const reportInfo = document.createElement('div');
-    reportInfo.innerHTML = `
-      <div style="margin-bottom: 30px;">
-        <h3 style="color: #374151; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">Informações do Relatório</h3>
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500; width: 150px;">Número:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${report.number}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">Data:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${formatDate(report.date)}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">Cliente:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${report.client}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">Local:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${report.location}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">Responsável:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${report.responsible}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">Status:</td>
-            <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-              <span style="
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: 500;
-                ${report.status === 'aprovado' ? 'background: #dcfce7; color: #166534;' : ''}
-                ${report.status === 'reprovado' ? 'background: #fee2e2; color: #991b1b;' : ''}
-                ${report.status === 'finalizado' ? 'background: #dbeafe; color: #1e40af;' : ''}
-                ${report.status === 'rascunho' ? 'background: #fef3c7; color: #92400e;' : ''}
-              ">${report.status.toUpperCase()}</span>
-            </td>
-          </tr>
-        </table>
-      </div>
-    `;
-    pdfElement.appendChild(reportInfo);
-
-    // Tabela de testes
-    if (options.includeTests && tests.length > 0) {
-      const testsSection = document.createElement('div');
-      testsSection.innerHTML = `
-        <div style="margin-bottom: 30px;">
-          <h3 style="color: #374151; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">Resultados dos Ensaios</h3>
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb;">
-            <thead>
-              <tr style="background: #f9fafb;">
-                <th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; font-weight: 600;">Equipamento</th>
-                <th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; font-weight: 600;">Tipo</th>
-                <th style="padding: 12px; text-align: center; border: 1px solid #e5e7eb; font-weight: 600;">Valor</th>
-                <th style="padding: 12px; text-align: center; border: 1px solid #e5e7eb; font-weight: 600;">Resultado</th>
-                <th style="padding: 12px; text-align: left; border: 1px solid #e5e7eb; font-weight: 600;">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tests.map(test => {
-                const equip = equipment.find(e => e.id === test.equipmentId);
-                return `
-                  <tr>
-                    <td style="padding: 12px; border: 1px solid #e5e7eb;">${equip ? equip.tag : 'N/A'}</td>
-                    <td style="padding: 12px; border: 1px solid #e5e7eb;">${test.testType.toUpperCase()}</td>
-                    <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center;">${formatTestValue(test.value, test.unit)}</td>
-                    <td style="padding: 12px; border: 1px solid #e5e7eb; text-align: center;">
-                      <span style="
-                        padding: 4px 8px;
-                        border-radius: 4px;
-                        font-size: 12px;
-                        font-weight: 500;
-                        ${test.result === 'BOM' ? 'background: #dcfce7; color: #166534;' : ''}
-                        ${test.result === 'ACEITÁVEL' ? 'background: #fef3c7; color: #92400e;' : ''}
-                        ${test.result === 'REPROVADO' ? 'background: #fee2e2; color: #991b1b;' : ''}
-                      ">${test.result}</span>
-                    </td>
-                    <td style="padding: 12px; border: 1px solid #e5e7eb;">${formatDate(test.performedAt)}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-      pdfElement.appendChild(testsSection);
+/**
+ * Exporta relatório IR para PDF no formato cupom
+ */
+export async function exportCupomPDF(
+  report: IRReport, 
+  options: ExportOptions = { format: 'pdf', includeMetadata: true, includeComments: false }
+): Promise<Blob> {
+  const html = generateCupomHTML(report, options);
+  
+  const pdfOptions = {
+    margin: [5, 5, 5, 5],
+    filename: `relatorio_ir_${report.category}_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { 
+      unit: 'mm', 
+      format: 'a7', 
+      orientation: 'portrait' 
     }
-
-    // Observações e recomendações
-    if (report.observations || report.recommendations) {
-      const observationsSection = document.createElement('div');
-      observationsSection.innerHTML = `
-        <div style="margin-bottom: 30px;">
-          ${report.observations ? `
-            <div style="margin-bottom: 20px;">
-              <h3 style="color: #374151; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">Observações</h3>
-              <p style="margin: 0; line-height: 1.6; color: #4b5563;">${report.observations}</p>
-            </div>
-          ` : ''}
-          ${report.recommendations ? `
-            <div>
-              <h3 style="color: #374151; margin: 0 0 10px 0; font-size: 16px; font-weight: 600;">Recomendações</h3>
-              <p style="margin: 0; line-height: 1.6; color: #4b5563;">${report.recommendations}</p>
-            </div>
-          ` : ''}
-        </div>
-      `;
-      pdfElement.appendChild(observationsSection);
-    }
-
-    // Rodapé
-    const footer = document.createElement('div');
-    footer.innerHTML = `
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
-        <p style="margin: 0;">Relatório gerado em ${formatDateTime(new Date().toISOString())}</p>
-        <p style="margin: 5px 0 0 0;">EletriLab - Sistema de Ensaios Elétricos</p>
-      </div>
-    `;
-    pdfElement.appendChild(footer);
-
-    // Configurações do PDF
-    const pdfOptions = {
-      margin: [10, 10, 10, 10],
-      filename: `relatorio_${report.number}_${formatDate(report.date)}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    // Gerar PDF
-    await html2pdf().from(pdfElement).set(pdfOptions).save();
-
-  } catch (error) {
-    console.error('Erro ao gerar PDF:', error);
-    throw new Error('Falha ao gerar PDF do relatório');
-  }
+  };
+  
+  return await html2pdf().from(html).set(pdfOptions).outputPdf('blob');
 }
 
-// Função para exportar dados em CSV
-export function exportDataToCSV(
-  data: (Report | Test | Equipment)[],
-  filename: string,
-  headers: string[]
-): void {
-  try {
-    // Converter dados para CSV
-    const csvContent = [
-      headers.join(','),
-      ...data.map(item => {
-        if ('number' in item) {
-          // Report
-          return [
-            item.number,
-            formatDate(item.date),
-            item.client,
-            item.location,
-            item.responsible,
-            item.status
-          ].join(',');
-        } else if ('testType' in item) {
-          // Test
-          return [
-            item.testType,
-            item.value.toString(),
-            item.unit,
-            item.result,
-            formatDate(item.performedAt),
-            item.performedBy
-          ].join(',');
-        } else {
-          // Equipment
-          return [
-            item.tag,
-            item.category,
-            item.description,
-            item.location,
-            item.manufacturer,
-            item.model,
-            item.status
-          ].join(',');
+/**
+ * Exporta relatório multi-fase para PDF
+ */
+export async function exportMultiPhasePDF(
+  report: MultiPhaseReport,
+  options: ExportOptions = { format: 'pdf', includeMetadata: true, includeComments: true }
+): Promise<Blob> {
+  const html = generateMultiPhaseHTML(report, options);
+  
+  const pdfOptions = {
+    margin: [10, 10, 10, 10],
+    filename: `relatorio_multifase_${report.reports.length}_fases_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { 
+      unit: 'mm', 
+      format: 'a4', 
+      orientation: 'portrait' 
+    }
+  };
+  
+  return await html2pdf().from(html).set(pdfOptions).outputPdf('blob');
+}
+
+/**
+ * Gera HTML para relatório cupom
+ */
+function generateCupomHTML(report: IRReport, options: ExportOptions): string {
+  const metadata = options.includeMetadata ? `
+    <div class="metadata">
+      <p><strong>Categoria:</strong> ${report.category}</p>
+      ${report.tag ? `<p><strong>Tag:</strong> ${report.tag}</p>` : ''}
+      ${report.manufacturer ? `<p><strong>Fabricante:</strong> ${report.manufacturer}</p>` : ''}
+      ${report.model ? `<p><strong>Modelo:</strong> ${report.model}</p>` : ''}
+      ${report.client ? `<p><strong>Cliente:</strong> ${report.client}</p>` : ''}
+      ${report.site ? `<p><strong>Local:</strong> ${report.site}</p>` : ''}
+      ${report.operator ? `<p><strong>Operador:</strong> ${report.operator}</p>` : ''}
+    </div>
+  ` : '';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Relatório IR - ${report.category}</title>
+      <style>
+        body {
+          font-family: 'Courier New', monospace;
+          font-size: 10px;
+          margin: 0;
+          padding: 10px;
+          background: white;
         }
-      })
-    ].join('\n');
-
-    // Criar blob e download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${filename}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  } catch (error) {
-    console.error('Erro ao exportar CSV:', error);
-    throw new Error('Falha ao exportar dados em CSV');
-  }
+        .header {
+          text-align: center;
+          border-bottom: 2px solid #000;
+          padding-bottom: 5px;
+          margin-bottom: 10px;
+        }
+        .title {
+          font-size: 14px;
+          font-weight: bold;
+          margin: 0;
+        }
+        .metadata {
+          font-size: 8px;
+          margin-bottom: 10px;
+        }
+        .metadata p {
+          margin: 2px 0;
+        }
+        .readings-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 10px 0;
+        }
+        .readings-table th,
+        .readings-table td {
+          border: 1px solid #000;
+          padding: 3px;
+          text-align: center;
+          font-size: 9px;
+        }
+        .readings-table th {
+          background: #f0f0f0;
+          font-weight: bold;
+        }
+        .dai {
+          text-align: center;
+          font-weight: bold;
+          font-size: 12px;
+          margin-top: 10px;
+          padding: 5px;
+          border: 2px solid #000;
+        }
+        .footer {
+          font-size: 8px;
+          text-align: center;
+          margin-top: 10px;
+          border-top: 1px solid #000;
+          padding-top: 5px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1 class="title">RELATÓRIO IR - ${report.category.toUpperCase()}</h1>
+        <p>Data: ${report.createdAt.toLocaleDateString('pt-BR')}</p>
+      </div>
+      
+      ${metadata}
+      
+      <table class="readings-table">
+        <thead>
+          <tr>
+            <th>Tempo</th>
+            <th>kV</th>
+            <th>Resistência</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${report.readings.map(reading => `
+            <tr>
+              <td>${reading.time}</td>
+              <td>${reading.kv}</td>
+              <td>${reading.resistance}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      <div class="dai">
+        DAI: ${report.dai}
+      </div>
+      
+      <div class="footer">
+        <p>Gerado por EletriLab Ultra-MVP</p>
+        <p>${new Date().toLocaleString('pt-BR')}</p>
+      </div>
+    </body>
+    </html>
+  `;
 }
 
-// Função para exportar relatórios em CSV
-export function exportReportsToCSV(reports: Report[]): void {
-  const headers = ['Número', 'Data', 'Cliente', 'Local', 'Responsável', 'Status'];
-  exportDataToCSV(reports, 'relatorios', headers);
+/**
+ * Gera HTML para relatório multi-fase
+ */
+function generateMultiPhaseHTML(report: MultiPhaseReport, options: ExportOptions): string {
+  const metadata = options.includeMetadata ? `
+    <div class="metadata">
+      <p><strong>Total de Relatórios:</strong> ${report.reports.length}</p>
+      <p><strong>Fases/Fases:</strong> ${report.summary.phaseToPhase}</p>
+      <p><strong>Fases/Massa:</strong> ${report.summary.phaseToGround}</p>
+      ${report.equipment.model ? `<p><strong>Modelo:</strong> ${report.equipment.model}</p>` : ''}
+      ${report.equipment.unitId ? `<p><strong>Unit ID:</strong> ${report.equipment.unitId}</p>` : ''}
+    </div>
+  ` : '';
+
+  const reportsHTML = report.reports.map(subReport => `
+    <div class="sub-report">
+      <h3>${subReport.id} - Test No: ${subReport.testNo}</h3>
+      <p><strong>Tipo:</strong> ${subReport.type === 'phase-phase' ? 'Fase/Fase' : 'Fase/Massa'}</p>
+      <p><strong>Descrição:</strong> ${subReport.description}</p>
+      
+      <table class="readings-table">
+        <thead>
+          <tr>
+            <th>Tempo</th>
+            <th>kV</th>
+            <th>Resistência</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${subReport.readings.map(reading => `
+            <tr>
+              <td>${reading.time}</td>
+              <td>${reading.kv}</td>
+              <td>${reading.resistance}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      <p><strong>DAI:</strong> ${subReport.dai}</p>
+      ${options.includeComments ? `<p><strong>Comentários:</strong> ${subReport.comments}</p>` : ''}
+    </div>
+  `).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Relatório Multi-Fase</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+          margin: 0;
+          padding: 20px;
+          background: white;
+        }
+        .header {
+          text-align: center;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+          margin-bottom: 20px;
+        }
+        .title {
+          font-size: 18px;
+          font-weight: bold;
+          margin: 0;
+        }
+        .metadata {
+          margin-bottom: 20px;
+          padding: 10px;
+          background: #f9f9f9;
+          border-radius: 5px;
+        }
+        .metadata p {
+          margin: 5px 0;
+        }
+        .sub-report {
+          margin-bottom: 30px;
+          padding: 15px;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+        }
+        .sub-report h3 {
+          margin: 0 0 10px 0;
+          color: #333;
+        }
+        .readings-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 10px 0;
+        }
+        .readings-table th,
+        .readings-table td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: center;
+        }
+        .readings-table th {
+          background: #f0f0f0;
+          font-weight: bold;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 20px;
+          padding-top: 10px;
+          border-top: 1px solid #ddd;
+          font-size: 10px;
+          color: #666;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1 class="title">RELATÓRIO MULTI-FASE</h1>
+        <p>Data: ${report.createdAt.toLocaleDateString('pt-BR')}</p>
+      </div>
+      
+      ${metadata}
+      
+      ${reportsHTML}
+      
+      <div class="footer">
+        <p>Gerado por EletriLab Ultra-MVP com IA</p>
+        <p>${new Date().toLocaleString('pt-BR')}</p>
+      </div>
+    </body>
+    </html>
+  `;
 }
 
-// Função para exportar testes em CSV
-export function exportTestsToCSV(tests: Test[]): void {
-  const headers = ['Tipo', 'Valor', 'Unidade', 'Resultado', 'Data', 'Responsável'];
-  exportDataToCSV(tests, 'testes', headers);
+/**
+ * Exporta relatório IR para CSV
+ */
+export function exportCupomCSV(report: IRReport): string {
+  const headers = ['Tempo', 'kV', 'Resistência'];
+  const rows = report.readings.map(reading => [
+    reading.time,
+    reading.kv,
+    reading.resistance
+  ]);
+  
+  // Adicionar linha do DAI
+  rows.push(['DAI', '', report.dai]);
+  
+  // Adicionar metadados se disponíveis
+  if (report.tag) rows.push(['Tag', '', report.tag]);
+  if (report.manufacturer) rows.push(['Fabricante', '', report.manufacturer]);
+  if (report.model) rows.push(['Modelo', '', report.model]);
+  if (report.client) rows.push(['Cliente', '', report.client]);
+  if (report.site) rows.push(['Local', '', report.site]);
+  if (report.operator) rows.push(['Operador', '', report.operator]);
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n');
+  
+  return csvContent;
 }
 
-// Função para exportar equipamentos em CSV
-export function exportEquipmentToCSV(equipment: Equipment[]): void {
-  const headers = ['Tag', 'Categoria', 'Descrição', 'Localização', 'Fabricante', 'Modelo', 'Status'];
-  exportDataToCSV(equipment, 'equipamentos', headers);
+/**
+ * Exporta relatório multi-fase para CSV
+ */
+export function exportMultiPhaseCSV(report: MultiPhaseReport): string {
+  const headers = ['Report ID', 'Test No', 'Type', 'Description', 'Phases', 'Time', 'kV', 'Resistance', 'DAI', 'Comments'];
+  const rows: string[][] = [];
+  
+  report.reports.forEach(subReport => {
+    subReport.readings.forEach((reading, index) => {
+      rows.push([
+        subReport.id,
+        subReport.testNo.toString(),
+        subReport.type,
+        subReport.description,
+        subReport.phases.join('/'),
+        reading.time,
+        reading.kv,
+        reading.resistance,
+        index === 3 ? subReport.dai : '', // DAI apenas na última linha
+        index === 3 ? subReport.comments : '' // Comentários apenas na última linha
+      ]);
+    });
+  });
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n');
+  
+  return csvContent;
 }
 
-// Função para exportar dados filtrados
-export function exportFilteredData(
-  data: (Report | Test | Equipment)[],
-  filters: any,
-  dataType: 'reports' | 'tests' | 'equipment'
-): void {
-  try {
-    let filteredData = [...data];
-
-    // Aplicar filtros de data se existirem
-    if (filters.dateRange) {
-      filteredData = filteredData.filter(item => {
-        const itemDate = 'date' in item ? item.date : 'performedAt' in item ? item.performedAt : item.createdAt;
-        const date = new Date(itemDate);
-        const start = new Date(filters.dateRange.start);
-        const end = new Date(filters.dateRange.end);
-        return date >= start && date <= end;
-      });
-    }
-
-    // Aplicar filtros de status se existirem
-    if (filters.status && filters.status.length > 0) {
-      filteredData = filteredData.filter(item => {
-        const status = 'status' in item ? item.status : 'result' in item ? item.result : null;
-        return status && filters.status.includes(status);
-      });
-    }
-
-    // Exportar dados filtrados
-    switch (dataType) {
-      case 'reports':
-        exportReportsToCSV(filteredData as Report[]);
-        break;
-      case 'tests':
-        exportTestsToCSV(filteredData as Test[]);
-        break;
-      case 'equipment':
-        exportEquipmentToCSV(filteredData as Equipment[]);
-        break;
-    }
-  } catch (error) {
-    console.error('Erro ao exportar dados filtrados:', error);
-    throw new Error('Falha ao exportar dados filtrados');
-  }
-}
-
-// ----------------- Cupom (Ultra-MVP) -----------------
-
-export function exportCupomPDF(node: HTMLElement, filename = 'eletrilab-cupom.pdf') {
-  html2pdf()
-    .set({
-      filename,
-      margin: [5, 5, 5, 5],
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a7', orientation: 'portrait' }
-    })
-    .from(node)
-    .save();
-}
-
-export function exportCupomCSV(r: CupomReport, filename = 'eletrilab-cupom.csv') {
-  const rows: string[][] = [
-    ['model', 'unit_id', 'test_no', 'timestamp'],
-    [r.header.model ?? '', r.header.unit_id ?? '', String(r.header.test_no), r.header.timestamp],
-    [],
-    ['mm:ss', 'kV', 'Ohms'],
-    ...r.lines.map((l) => [l.t, l.kv, l.ohms]),
-    [],
-    ['DAI', r.dai]
-  ];
-  const csv = rows.map((row) => row.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+/**
+ * Download de arquivo
+ */
+export function downloadFile(content: string | Blob, filename: string, mimeType: string): void {
+  const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Exporta relatório IR
+ */
+export async function exportIRReport(
+  report: IRReport, 
+  format: 'pdf' | 'csv' = 'pdf',
+  options: ExportOptions = { format, includeMetadata: true, includeComments: false }
+): Promise<void> {
+  const timestamp = new Date().toISOString().split('T')[0];
+  const baseFilename = `relatorio_ir_${report.category}_${timestamp}`;
+  
+  if (format === 'pdf') {
+    const blob = await exportCupomPDF(report, options);
+    downloadFile(blob, `${baseFilename}.pdf`, 'application/pdf');
+  } else {
+    const csv = exportCupomCSV(report);
+    downloadFile(csv, `${baseFilename}.csv`, 'text/csv');
+  }
+}
+
+/**
+ * Exporta relatório multi-fase
+ */
+export async function exportMultiPhaseReport(
+  report: MultiPhaseReport,
+  format: 'pdf' | 'csv' = 'pdf',
+  options: ExportOptions = { format, includeMetadata: true, includeComments: true }
+): Promise<void> {
+  const timestamp = new Date().toISOString().split('T')[0];
+  const baseFilename = `relatorio_multifase_${report.reports.length}_fases_${timestamp}`;
+  
+  if (format === 'pdf') {
+    const blob = await exportMultiPhasePDF(report, options);
+    downloadFile(blob, `${baseFilename}.pdf`, 'application/pdf');
+  } else {
+    const csv = exportMultiPhaseCSV(report);
+    downloadFile(csv, `${baseFilename}.csv`, 'text/csv');
+  }
+}
+
+/**
+ * Exporta múltiplos relatórios em lote
+ */
+export async function exportBatchReports(
+  reports: (IRReport | MultiPhaseReport)[],
+  format: 'pdf' | 'csv' = 'pdf',
+  options: ExportOptions = { format, includeMetadata: true, includeComments: true }
+): Promise<void> {
+  if (reports.length === 0) return;
+  
+  // Se apenas um relatório, exportar normalmente
+  if (reports.length === 1) {
+    const report = reports[0];
+    if ('reports' in report) {
+      await exportMultiPhaseReport(report, format, options);
+    } else {
+      await exportIRReport(report, format, options);
+    }
+    return;
+  }
+  
+  // Para múltiplos relatórios, criar um arquivo ZIP seria ideal
+  // Por simplicidade, vamos exportar um por vez
+  for (let i = 0; i < reports.length; i++) {
+    const report = reports[i];
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    if ('reports' in report) {
+      const filename = `relatorio_multifase_${i + 1}_${timestamp}`;
+      if (format === 'pdf') {
+        const blob = await exportMultiPhasePDF(report, options);
+        downloadFile(blob, `${filename}.pdf`, 'application/pdf');
+      } else {
+        const csv = exportMultiPhaseCSV(report);
+        downloadFile(csv, `${filename}.csv`, 'text/csv');
+      }
+    } else {
+      const filename = `relatorio_ir_${i + 1}_${timestamp}`;
+      if (format === 'pdf') {
+        const blob = await exportCupomPDF(report, options);
+        downloadFile(blob, `${filename}.pdf`, 'application/pdf');
+      } else {
+        const csv = exportCupomCSV(report);
+        downloadFile(csv, `${filename}.csv`, 'text/csv');
+      }
+    }
+    
+    // Pequeno delay para evitar sobrecarga do navegador
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
 }
