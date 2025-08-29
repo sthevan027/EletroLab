@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
-import { dbUtils } from '../db/database';
+import * as db from '../services/db-compat';
 import { Equipment, EquipmentCategory } from '../types';
 import { validateEquipment } from '../utils/validation';
 
@@ -31,7 +31,7 @@ export default function EquipmentPage() {
   const loadEquipment = async () => {
     try {
       setLoading(true);
-      const equipmentList = await dbUtils.getAllEquipment();
+      const equipmentList = await db.getAllEquipment();
       setEquipment(equipmentList);
     } catch (error) {
       console.error('Erro ao carregar equipamentos:', error);
@@ -51,9 +51,9 @@ export default function EquipmentPage() {
       }
 
       if (editingEquipment) {
-        await dbUtils.updateEquipment(editingEquipment.id, formData);
+        await db.updateEquipment(editingEquipment.id, formData);
       } else {
-        await dbUtils.addEquipment(formData);
+        await db.addEquipment(formData);
       }
 
       setShowForm(false);
@@ -87,7 +87,7 @@ export default function EquipmentPage() {
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir este equipamento?')) {
       try {
-        await dbUtils.deleteEquipment(id);
+        await db.deleteEquipment(id);
         loadEquipment();
       } catch (error) {
         console.error('Erro ao deletar equipamento:', error);

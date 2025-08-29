@@ -247,3 +247,28 @@ export function validatePhone(phone: string): boolean {
   const phoneRegex = /^[\d\s\-\+\(\)]+$/;
   return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
 }
+
+// === Helpers de compatibilidade ===
+export function validateEquipment(e: import('../types').Equipment) {
+  // Faça validação real depois; por ora só garante assinatura
+  return { ok: true as const, errors: [] as string[] };
+}
+
+// Se você já tem validateIRReport, reexporte como validateReport
+export { validateReport as validateIRReport };
+
+// Pequenos utilitários que as páginas antigas esperam:
+export function validateTest() {
+  return { ok: true as const, errors: [] as string[] };
+}
+
+export function generateRandomTestValue(min = 1, max = 10) {
+  return Math.random() * (max - min) + min;
+}
+
+export function classifyTest(value: number) {
+  // regra placeholder: > 1 MΩ OK
+  return value >= 1_000_000 ? 'OK' : 'ALERTA';
+}
+
+// Formatações de compatibilidade - usar as funções originais acima

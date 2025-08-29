@@ -9,4 +9,20 @@ export function formatResistance(valueOhms: number, limitTOhm = 5): string {
   return `${(valueOhms/1e12).toFixed(2)}TΩ`;
 }
 
+// Ex.: "5 MΩ" -> 5_000_000
+export function parseResistance(input: string): number {
+  if (!input) return 0;
+  const m = String(input).trim().match(/^([\d.,]+)\s*(t?g?m?k?)? ?(ohm|Ω)?$/i);
+  if (!m) return Number(input) || 0;
+  const raw = m[1].replace('.', '').replace(',', '.'); // BR para ponto
+  const num = parseFloat(raw);
+  const u = (m[2] || '').toLowerCase();
+  const mul =
+    u === 'k' ? 1e3 :
+    u === 'm' ? 1e6 :
+    u === 'g' ? 1e9 :
+    u === 't' ? 1e12 : 1;
+  return num * mul;
+}
+
 

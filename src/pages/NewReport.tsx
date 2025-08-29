@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Save, X, Zap } from 'lucide-react';
-import { dbUtils } from '../db/database';
+import * as db from '../services/db-compat';
 import { Equipment, TestType } from '../types';
 import { 
   validateReport, 
@@ -42,7 +42,7 @@ export default function NewReport() {
 
   const loadEquipment = async () => {
     try {
-      const equipmentList = await dbUtils.getAllEquipment();
+      const equipmentList = await db.getAllEquipment();
       setEquipment(equipmentList);
     } catch (error) {
       console.error('Erro ao carregar equipamentos:', error);
@@ -52,7 +52,7 @@ export default function NewReport() {
   const addTest = () => {
     const newTest: TestForm = {
       equipmentId: '',
-      testType: 'megger',
+      testType: 'IR',
       value: 0,
       unit: 'MΩ',
       result: '',
@@ -89,7 +89,7 @@ export default function NewReport() {
     if (!selectedEquipment) return;
 
     try {
-      const config = await dbUtils.getConfiguration();
+      const config = await db.getConfiguration();
       const limits = config[test.testType][selectedEquipment.category];
       
       const randomValue = generateRandomTestValue(test.testType, selectedEquipment.category);
@@ -125,7 +125,7 @@ export default function NewReport() {
       }
 
       // Criar relatório
-      const reportId = await dbUtils.addReport({
+      const reportId = await db.addReport({
         ...reportForm,
         status: 'rascunho',
         tests: [],
@@ -133,14 +133,14 @@ export default function NewReport() {
       });
 
       // Criar testes
-      const config = await dbUtils.getConfiguration();
+              const config = await db.getConfiguration();
       for (const testForm of tests) {
         const selectedEquipment = equipment.find(e => e.id === testForm.equipmentId);
         if (!selectedEquipment) continue;
 
         const limits = config[testForm.testType][selectedEquipment.category];
         
-        await dbUtils.addTest({
+        await db.addTest({
           reportId,
           equipmentId: testForm.equipmentId,
           testType: testForm.testType,

@@ -1,14 +1,14 @@
 import Dexie, { Table } from 'dexie';
-import { Equipment, Report, Test, TestConfiguration } from '../types';
+import { EquipmentOriginal, ReportOriginal, TestOriginal, TestConfiguration } from '../types';
 
 export interface ConfigRecord extends TestConfiguration {
   id: string;
 }
 
 export class EletriLabDB extends Dexie {
-  equipment!: Table<Equipment>;
-  report!: Table<Report>;
-  test!: Table<Test>;
+  equipment!: Table<EquipmentOriginal>;
+  report!: Table<ReportOriginal>;
+  test!: Table<TestOriginal>;
   configuration!: Table<ConfigRecord>;
 
   constructor() {
@@ -67,7 +67,7 @@ export async function initializeDatabase() {
 // Funções utilitárias para o banco de dados
 export const dbUtils = {
   // Equipamentos
-  async getAllEquipment(): Promise<Equipment[]> {
+  async getAllEquipment(): Promise<EquipmentOriginal[]> {
     try {
       return await db.equipment.toArray();
     } catch (error) {
@@ -76,7 +76,7 @@ export const dbUtils = {
     }
   },
 
-  async getEquipmentById(id: string): Promise<Equipment | undefined> {
+  async getEquipmentById(id: string): Promise<EquipmentOriginal | undefined> {
     try {
       return await db.equipment.get(id);
     } catch (error) {
@@ -85,11 +85,11 @@ export const dbUtils = {
     }
   },
 
-  async addEquipment(equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async addEquipment(equipment: Omit<EquipmentOriginal, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
-      const newEquipment: Equipment = {
+      const newEquipment: EquipmentOriginal = {
         ...equipment,
         id,
         createdAt: now,
@@ -103,7 +103,7 @@ export const dbUtils = {
     }
   },
 
-  async updateEquipment(id: string, updates: Partial<Equipment>): Promise<void> {
+  async updateEquipment(id: string, updates: Partial<EquipmentOriginal>): Promise<void> {
     try {
       const equipment = await db.equipment.get(id);
       if (equipment) {
@@ -128,7 +128,7 @@ export const dbUtils = {
   },
 
   // Relatórios
-  async getAllReports(): Promise<Report[]> {
+  async getAllReports(): Promise<ReportOriginal[]> {
     try {
       return await db.report.toArray();
     } catch (error) {
@@ -137,7 +137,7 @@ export const dbUtils = {
     }
   },
 
-  async getReportById(id: string): Promise<Report | undefined> {
+  async getReportById(id: string): Promise<ReportOriginal | undefined> {
     try {
       return await db.report.get(id);
     } catch (error) {
@@ -146,11 +146,11 @@ export const dbUtils = {
     }
   },
 
-  async addReport(report: Omit<Report, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async addReport(report: Omit<ReportOriginal, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
-      const newReport: Report = {
+      const newReport: ReportOriginal = {
         ...report,
         id,
         createdAt: now,
@@ -164,7 +164,7 @@ export const dbUtils = {
     }
   },
 
-  async updateReport(id: string, updates: Partial<Report>): Promise<void> {
+  async updateReport(id: string, updates: Partial<ReportOriginal>): Promise<void> {
     try {
       const report = await db.report.get(id);
       if (report) {
@@ -191,7 +191,7 @@ export const dbUtils = {
   },
 
   // Testes
-  async getAllTests(): Promise<Test[]> {
+  async getAllTests(): Promise<TestOriginal[]> {
     try {
       return await db.test.toArray();
     } catch (error) {
@@ -200,7 +200,7 @@ export const dbUtils = {
     }
   },
 
-  async getTestsByReportId(reportId: string): Promise<Test[]> {
+  async getTestsByReportId(reportId: string): Promise<TestOriginal[]> {
     try {
       return await db.test.where('reportId').equals(reportId).toArray();
     } catch (error) {
@@ -209,11 +209,11 @@ export const dbUtils = {
     }
   },
 
-  async addTest(test: Omit<Test, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async addTest(test: Omit<TestOriginal, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
-      const newTest: Test = {
+      const newTest: TestOriginal = {
         ...test,
         id,
         createdAt: now,
@@ -227,7 +227,7 @@ export const dbUtils = {
     }
   },
 
-  async updateTest(id: string, updates: Partial<Test>): Promise<void> {
+  async updateTest(id: string, updates: Partial<TestOriginal>): Promise<void> {
     try {
       const test = await db.test.get(id);
       if (test) {

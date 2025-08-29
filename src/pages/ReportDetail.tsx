@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Download, ArrowLeft } from 'lucide-react';
-import { dbUtils } from '../db/database';
-import { Report, Test, Equipment } from '../types';
+import * as db from '../services/db-compat';
+import { IRReport as Report, Test, Equipment } from '../types';
 import { formatDate, formatTestValue } from '../utils/validation';
 
 export default function ReportDetail() {
@@ -22,9 +22,9 @@ export default function ReportDetail() {
     try {
       setLoading(true);
       const [reportData, testsData, equipmentData] = await Promise.all([
-        dbUtils.getReportById(reportId),
-        dbUtils.getTestsByReportId(reportId),
-        dbUtils.getAllEquipment()
+        db.getReportById(reportId),
+        db.getTestsByReportId(reportId),
+        db.getAllEquipment()
       ]);
 
       if (reportData) {

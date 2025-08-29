@@ -1,10 +1,10 @@
-// Tipos de equipamento
-export type EquipmentCategory = 'motor' | 'transformador' | 'gerador' | 'painel' | 'cabo' | 'outro';
+// Tipos de equipamento originais
+export type EquipmentCategoryOriginal = 'motor' | 'transformador' | 'gerador' | 'painel' | 'cabo' | 'outro';
 
-export interface Equipment {
+export interface EquipmentOriginal {
   id: string;
   tag: string;
-  category: EquipmentCategory;
+  category: EquipmentCategoryOriginal;
   description: string;
   location: string;
   manufacturer: string;
@@ -18,15 +18,72 @@ export interface Equipment {
   updatedAt: string;
 }
 
-// Tipos de teste
-export type TestType = 'megger' | 'hipot';
+// === Compat: aliases esperados pelas páginas antigas ===
+export type EquipmentCategoryCompat = 'megger' | 'cabo' | 'painel' | 'motor' | 'outros';
+
+export type EquipmentCompat = {
+  id?: number;
+  name: string;
+  category: EquipmentCategoryCompat;
+  manufacturer?: string;
+  model?: string;
+  tag?: string;
+  calibrationDue?: string;   // Data de validade
+  nextCalibration?: string;  // Próxima calibração
+};
+
+export type TestTypeCompat = 'IR' | 'DAI' | 'CONTINUIDADE' | 'RESISTENCIA';
+
+export type ResistanceUnit = 'Ω' | 'kΩ' | 'MΩ' | 'GΩ' | 'TΩ';
+
+export type TestCompat = {
+  id?: number;
+  reportId: number;
+  type: TestTypeCompat;
+  value: number;
+  unit: ResistanceUnit;
+  classification: 'OK' | 'ALERTA' | 'FALHA';
+  measuredAt: string; // ISO
+};
+
+// Se você já tem IRReport, expõe também como Report para compat
+export type IRReport = {
+  id?: number;
+  createdAt: string;
+  category?: string;
+  operator?: string;
+  site?: string;
+  client?: string;
+  notes?: string;
+};
+export type ReportCompat = IRReport;
+
+// Ajuste em AILearningHistory: adicionar 'input' para não quebrar
+export type AILearningHistory = {
+  id?: number;
+  createdAt: string;
+  input?: string;   // <— estava faltando; as páginas usam
+  output: string;
+  context?: string;
+  prompt?: string;
+};
+
+// === Aliases para compatibilidade com páginas antigas ===
+export { EquipmentCompat as Equipment };
+export { EquipmentCategoryCompat as EquipmentCategory };
+export { TestTypeCompat as TestType };
+export { TestCompat as Test };
+export { ReportCompat as Report };
+
+// Tipos de teste originais
+export type TestTypeOriginal = 'megger' | 'hipot';
 export type TestResult = 'BOM' | 'ACEITÁVEL' | 'REPROVADO';
 
-export interface Test {
+export interface TestOriginal {
   id: string;
   reportId: string;
   equipmentId: string;
-  testType: TestType;
+  testType: TestTypeOriginal;
   value: number;
   unit: string;
   result: TestResult;
@@ -44,10 +101,10 @@ export interface TestLimit {
   unit: string;
 }
 
-// Tipos de relatório
+// Tipos de relatório originais
 export type ReportStatus = 'rascunho' | 'finalizado' | 'aprovado' | 'reprovado';
 
-export interface Report {
+export interface ReportOriginal {
   id: string;
   number: string;
   date: string;
@@ -55,7 +112,7 @@ export interface Report {
   location: string;
   responsible: string;
   status: ReportStatus;
-  tests: Test[];
+  tests: TestOriginal[];
   observations: string;
   recommendations: string;
   attachments: string[];
@@ -93,9 +150,9 @@ export interface DashboardStats {
     ACEITÁVEL: number;
     REPROVADO: number;
   };
-  categoryDistribution: Record<EquipmentCategory, number>;
-  recentReports: Report[];
-  recentTests: Test[];
+  categoryDistribution: Record<EquipmentCategoryCompat, number>;
+  recentReports: ReportOriginal[];
+  recentTests: TestOriginal[];
 }
 
 // Tipos de exportação
@@ -154,14 +211,14 @@ export interface ReportFilters {
 }
 
 export interface EquipmentFilters {
-  category?: EquipmentCategory[];
-  status?: Equipment['status'][];
+  category?: EquipmentCategoryCompat[];
+  status?: EquipmentCompat['status'][];
   location?: string;
   manufacturer?: string;
 }
 
 export interface TestFilters {
-  testType?: TestType[];
+  testType?: TestTypeCompat[];
   result?: TestResult[];
   dateRange?: {
     start: string;
