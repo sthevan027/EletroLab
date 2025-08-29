@@ -1,3 +1,5 @@
+// === TIPOS ORIGINAIS ===
+
 // Tipos de equipamento originais
 export type EquipmentCategoryOriginal = 'motor' | 'transformador' | 'gerador' | 'painel' | 'cabo' | 'outro';
 
@@ -17,63 +19,6 @@ export interface EquipmentOriginal {
   createdAt: string;
   updatedAt: string;
 }
-
-// === Compat: aliases esperados pelas páginas antigas ===
-export type EquipmentCategoryCompat = 'megger' | 'cabo' | 'painel' | 'motor' | 'outros';
-
-export type EquipmentCompat = {
-  id?: number;
-  name: string;
-  category: EquipmentCategoryCompat;
-  manufacturer?: string;
-  model?: string;
-  tag?: string;
-  calibrationDue?: string;   // Data de validade
-  nextCalibration?: string;  // Próxima calibração
-};
-
-export type TestTypeCompat = 'IR' | 'DAI' | 'CONTINUIDADE' | 'RESISTENCIA';
-
-export type ResistanceUnit = 'Ω' | 'kΩ' | 'MΩ' | 'GΩ' | 'TΩ';
-
-export type TestCompat = {
-  id?: number;
-  reportId: number;
-  type: TestTypeCompat;
-  value: number;
-  unit: ResistanceUnit;
-  classification: 'OK' | 'ALERTA' | 'FALHA';
-  measuredAt: string; // ISO
-};
-
-// Se você já tem IRReport, expõe também como Report para compat
-export type IRReport = {
-  id?: number;
-  createdAt: string;
-  category?: string;
-  operator?: string;
-  site?: string;
-  client?: string;
-  notes?: string;
-};
-export type ReportCompat = IRReport;
-
-// Ajuste em AILearningHistory: adicionar 'input' para não quebrar
-export type AILearningHistory = {
-  id?: number;
-  createdAt: string;
-  input?: string;   // <— estava faltando; as páginas usam
-  output: string;
-  context?: string;
-  prompt?: string;
-};
-
-// === Aliases para compatibilidade com páginas antigas ===
-export { EquipmentCompat as Equipment };
-export { EquipmentCategoryCompat as EquipmentCategory };
-export { TestTypeCompat as TestType };
-export { TestCompat as Test };
-export { ReportCompat as Report };
 
 // Tipos de teste originais
 export type TestTypeOriginal = 'megger' | 'hipot';
@@ -120,7 +65,7 @@ export interface ReportOriginal {
   updatedAt: string;
 }
 
-// Tipos de configuração
+// Tipos de configuração originais
 export interface TestConfiguration {
   megger: {
     motor: TestLimit;
@@ -140,7 +85,167 @@ export interface TestConfiguration {
   };
 }
 
-// Tipos de estatísticas
+// === TIPOS DE COMPATIBILIDADE ===
+
+// Aliases esperados pelas páginas antigas
+export type EquipmentCategoryCompat = 'megger' | 'cabo' | 'painel' | 'motor' | 'outros';
+
+export type EquipmentCompat = {
+  id?: number;
+  name: string;
+  category: EquipmentCategoryCompat;
+  manufacturer?: string;
+  model?: string;
+  tag?: string;
+  calibrationDue?: string;   // Data de validade
+  nextCalibration?: string;  // Próxima calibração
+};
+
+export type TestTypeCompat = 'IR' | 'DAI' | 'CONTINUIDADE' | 'RESISTENCIA';
+
+export type ResistanceUnit = 'Ω' | 'kΩ' | 'MΩ' | 'GΩ' | 'TΩ';
+
+export type TestCompat = {
+  id?: number;
+  reportId: number;
+  type: TestTypeCompat;
+  value: number;
+  unit: ResistanceUnit;
+  classification: 'OK' | 'ALERTA' | 'FALHA';
+  measuredAt: string; // ISO
+};
+
+// === TIPOS NOVOS ===
+
+// Tipos de categoria para relatórios IR
+export type Category = 'cabo' | 'motor' | 'bomba' | 'trafo' | 'outro';
+
+// Relatório IR simplificado (formato cupom)
+export interface IRReport {
+  id: string;
+  number?: string;           // Apenas quando salvo
+  category: Category;
+  tag?: string;              // Opcional
+  kv: number;                // Tensão aplicada (default 1.00)
+  
+  // Dados opcionais (não bloqueiam geração)
+  client?: string;
+  site?: string;
+  operator?: string;
+  manufacturer?: string;
+  model?: string;
+  
+  // Série de tempos fixa
+  readings: {
+    time: string;            // "00:15", "00:30", "00:45", "01:00"
+    kv: string;              // Formato "1.00"
+    resistance: string;      // Formato "5.23GΩ" ou "0.99 OVRG"
+  }[];
+  
+  dai: string;               // "1.15" ou "Undefined"
+  createdAt: Date;
+  isSaved: boolean;          // true = salvo no IndexedDB, false = apenas preview
+}
+
+// Perfil de categoria para geração
+export interface CategoryProfile {
+  id: string;
+  category: Category;
+  name: string;
+  description: string;
+  baseResistance: {
+    min: number; // Ω
+    max: number; // Ω
+    decay: number; // Fator de decaimento (0-1)
+  };
+  temperature: {
+    min: number; // °C
+    max: number; // °C
+    effect: number; // Efeito por grau (0-1)
+  };
+  humidity: {
+    min: number; // %
+    max: number; // %
+    effect: number; // Efeito por % (0-1)
+  };
+  aiConfidence: number; // Confiança da IA (0-1)
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+// Configuração do sistema
+export interface SystemConfig {
+  id: string;
+  defaultOperator: string;
+  defaultClient: string;
+  defaultSite: string;
+  aiEnabled: boolean;
+  aiLearningRate: number;
+  defaultLimitTOhm: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Parâmetros de teste
+export interface Parameter {
+  id: string;
+  key: string;
+  category: Category;
+  value: any;
+  description?: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+// Configuração multi-fase
+export interface MultiPhaseConfig {
+  id: string;
+  equipmentType: Category;
+  phases: number;
+  voltage: number;
+  duration: number;
+  intervals: number[];
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+// Relatório multi-fase
+export interface MultiPhaseReport {
+  id: string;
+  configId: string;
+  equipmentTag: string;
+  operator: string;
+  readings: {
+    phase: number;
+    time: string;
+    resistance: string;
+    temperature?: number;
+    humidity?: number;
+  }[];
+  createdAt: Date;
+  isSaved: boolean;
+}
+
+// Ajuste em AILearningHistory: adicionar 'input' para não quebrar
+export type AILearningHistory = {
+  id?: number;
+  createdAt: string;
+  input?: string;   // <— estava faltando; as páginas usam
+  output: string;
+  context?: string;
+  prompt?: string;
+  category?: string;
+  phaseCount?: number;
+};
+
+// === ALIASES PARA COMPATIBILIDADE ===
+export { EquipmentCompat as Equipment };
+export { EquipmentCategoryCompat as EquipmentCategory };
+export { TestTypeCompat as TestType };
+export { TestCompat as Test };
+export { IRReport as ReportCompat };
+
+// === TIPOS DE ESTATÍSTICAS ===
 export interface DashboardStats {
   totalReports: number;
   totalEquipment: number;
@@ -155,7 +260,7 @@ export interface DashboardStats {
   recentTests: TestOriginal[];
 }
 
-// Tipos de exportação
+// === TIPOS DE EXPORTAÇÃO ===
 export interface ExportOptions {
   format: 'pdf' | 'csv';
   includeTests: boolean;
@@ -166,7 +271,7 @@ export interface ExportOptions {
   };
 }
 
-// Tipos de validação
+// === TIPOS DE VALIDAÇÃO ===
 export interface ValidationError {
   field: string;
   message: string;
@@ -177,7 +282,7 @@ export interface ValidationResult {
   errors: ValidationError[];
 }
 
-// Tipos de navegação
+// === TIPOS DE NAVEGAÇÃO ===
 export interface NavigationItem {
   id: string;
   label: string;
@@ -186,10 +291,10 @@ export interface NavigationItem {
   children?: NavigationItem[];
 }
 
-// Tipos de tema
+// === TIPOS DE TEMA ===
 export type Theme = 'light' | 'dark' | 'system';
 
-// Tipos de notificação
+// === TIPOS DE NOTIFICAÇÃO ===
 export interface Notification {
   id: string;
   type: 'success' | 'warning' | 'error' | 'info';
@@ -199,7 +304,7 @@ export interface Notification {
   createdAt: string;
 }
 
-// Tipos de filtros
+// === TIPOS DE FILTROS ===
 export interface ReportFilters {
   status?: ReportStatus[];
   dateRange?: {
