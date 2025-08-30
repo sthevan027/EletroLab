@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import * as db from '../services/db-compat';
 import { Equipment, EquipmentCategory } from '../types';
 import { validateEquipment } from '../utils/validation';
@@ -146,7 +146,7 @@ export default function EquipmentPage() {
           }}
           className="btn-primary"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <PlusIcon className="h-4 w-4 mr-2" />
           Novo Equipamento
         </button>
       </div>
@@ -304,7 +304,7 @@ export default function EquipmentPage() {
             Lista de Equipamentos
           </h2>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar equipamentos..."
@@ -371,13 +371,13 @@ export default function EquipmentPage() {
                         onClick={() => handleEdit(equip)}
                         className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
                       >
-                        <Edit className="h-4 w-4" />
+                        <PencilIcon className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(equip.id || 0)}
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </td>

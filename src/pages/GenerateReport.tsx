@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, 
-  Download, 
-  Save, 
-  RefreshCw, 
-  Brain,
-  FileText,
-  Settings,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
+  ArrowLeftIcon, 
+  ArrowDownTrayIcon, 
+  DocumentCheckIcon, 
+  ArrowPathIcon, 
+  CpuChipIcon,
+  DocumentTextIcon,
+  CogIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
 import { Category, IRReport, IRGenerationOptions, IRGenerationResult } from '../types';
 import { generateIRSeries } from '../utils/generator';
 import { validateIRReport } from '../utils/validation';
@@ -41,18 +41,18 @@ const GenerateReport: React.FC = () => {
 
   // Carregar configurações salvas
   useEffect(() => {
-    loadSavedSettings();
+    loadDocumentCheckIcondCogIcon();
   }, []);
 
-  const loadSavedSettings = async () => {
+  const loadDocumentCheckIcondCogIcon = async () => {
     try {
-      const savedSettings = await dbUtils.getSystemConfig();
-      if (savedSettings) {
+      const savedCogIcon = await dbUtils.getSystemConfig();
+      if (savedCogIcon) {
         setFormData(prev => ({
           ...prev,
-          operator: savedSettings.defaultOperator || '',
-          client: savedSettings.defaultClient || '',
-          site: savedSettings.defaultSite || ''
+          operator: savedCogIcon.defaultOperator || '',
+          client: savedCogIcon.defaultClient || '',
+          site: savedCogIcon.defaultSite || ''
         }));
       }
     } catch (error) {
@@ -141,7 +141,7 @@ const GenerateReport: React.FC = () => {
       const savedReport = {
         ...generatedReport,
         number: nextNumber,
-        isSaved: true
+        isDocumentCheckIcond: true
       };
 
       await dbUtils.saveIRReport(savedReport);
@@ -165,7 +165,7 @@ const GenerateReport: React.FC = () => {
       setExporting(true);
       const blob = await exportCupomPDF(generatedReport);
       
-      // Download do arquivo
+      // ArrowDownTrayIcon do arquivo
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -207,7 +207,7 @@ const GenerateReport: React.FC = () => {
                 onClick={() => navigate('/')}
                 className="mr-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeftIcon className="w-5 h-5" />
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -219,7 +219,7 @@ const GenerateReport: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center text-sm text-gray-500">
-              <Brain className="w-4 h-4 mr-1" />
+              <CpuChipIcon className="w-4 h-4 mr-1" />
               <span>IA Ativa</span>
             </div>
           </div>
@@ -231,7 +231,7 @@ const GenerateReport: React.FC = () => {
           {/* Formulário */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <Settings className="w-5 h-5 mr-2" />
+              <CogIcon className="w-5 h-5 mr-2" />
               Configurações
             </h2>
 
@@ -263,7 +263,7 @@ const GenerateReport: React.FC = () => {
                       <div className="text-sm text-gray-600">{cat.description}</div>
                     </div>
                     {formData.category === cat.value && (
-                      <CheckCircle className="w-5 h-5 text-blue-500" />
+                      <CheckCircleIcon className="w-5 h-5 text-blue-500" />
                     )}
                   </label>
                 ))}
@@ -347,12 +347,12 @@ const GenerateReport: React.FC = () => {
             >
               {generating ? (
                 <>
-                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                  <ArrowPathIcon className="w-5 h-5 mr-2 animate-spin" />
                   Gerando...
                 </>
               ) : (
                 <>
-                  <Brain className="w-5 h-5 mr-2" />
+                  <CpuChipIcon className="w-5 h-5 mr-2" />
                   Gerar com IA
                 </>
               )}
@@ -362,14 +362,14 @@ const GenerateReport: React.FC = () => {
           {/* Preview do Relatório */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
+              <DocumentTextIcon className="w-5 h-5 mr-2" />
               Preview do Relatório
             </h2>
 
             {validationErrors.length > 0 && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
                 <div className="flex items-center">
-                  <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                  <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-2" />
                   <div>
                     <h3 className="text-sm font-medium text-red-800">Erros encontrados:</h3>
                     <ul className="mt-1 text-sm text-red-700">
@@ -384,7 +384,7 @@ const GenerateReport: React.FC = () => {
 
             {!generatedReport ? (
               <div className="text-center py-12">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <DocumentTextIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">Nenhum relatório gerado</p>
                 <p className="text-sm text-gray-400 mt-1">
                   Configure os parâmetros e clique em "Gerar com IA"
@@ -448,7 +448,7 @@ const GenerateReport: React.FC = () => {
                     disabled={generating}
                     className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
-                    <RefreshCw className="w-4 h-4 mr-2" />
+                    <ArrowPathIcon className="w-4 h-4 mr-2" />
                     Regenerar
                   </button>
                   
@@ -459,12 +459,12 @@ const GenerateReport: React.FC = () => {
                   >
                     {saving ? (
                       <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
                         Salvando...
                       </>
                     ) : (
                       <>
-                        <Save className="w-4 h-4 mr-2" />
+                        <DocumentCheckIcon className="w-4 h-4 mr-2" />
                         {generatedReport.isSaved ? 'Salvo' : 'Salvar'}
                       </>
                     )}
@@ -477,12 +477,12 @@ const GenerateReport: React.FC = () => {
                   >
                     {exporting ? (
                       <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
                         Exportando...
                       </>
                     ) : (
                       <>
-                        <Download className="w-4 h-4 mr-2" />
+                        <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
                         Exportar
                       </>
                     )}

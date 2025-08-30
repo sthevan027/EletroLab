@@ -1,12 +1,14 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import GenerateReport from './pages/GenerateReport';
-import MultiPhase from './pages/MultiPhase';
-import Parameters from './pages/Parameters';
-import Equipment from './pages/Equipment';
 import NewReport from './pages/NewReport';
 import ReportDetail from './pages/ReportDetail';
+import Equipment from './pages/Equipment';
+import Parameters from './pages/Parameters';
+import MultiPhase from './pages/MultiPhase';
+import Reports from './pages/Reports';
 import './index.css';
 
 function App() {
@@ -16,11 +18,12 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/generate" element={<GenerateReport />} />
-          <Route path="/multiphase" element={<MultiPhase />} />
-          <Route path="/parameters" element={<Parameters />} />
+          <Route path="/new" element={<NewReport />} />
+          <Route path="/report/:type/:id" element={<ReportDetail />} />
           <Route path="/equipment" element={<Equipment />} />
-          <Route path="/new-report" element={<NewReport />} />
-          <Route path="/report/:id" element={<ReportDetail />} />
+          <Route path="/parameters" element={<Parameters />} />
+          <Route path="/multiphase" element={<MultiPhase />} />
+          <Route path="/reports" element={<Reports />} />
         </Routes>
       </Layout>
     </Router>

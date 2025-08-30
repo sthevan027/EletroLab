@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, 
-  Save, 
-  Brain, 
-  Settings,
-  Plus,
-  Trash2,
-  Edit,
-  CheckCircle,
-  AlertCircle,
-  RefreshCw
-} from 'lucide-react';
+  ArrowLeftIcon, 
+  DocumentCheckIcon, 
+  CpuChipIcon, 
+  CogIcon,
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline';
 import { Category, CategoryProfile, Parameter, SystemConfig } from '../types';
 import { dbUtils } from '../db/database';
 
@@ -177,7 +177,7 @@ const Parameters: React.FC = () => {
                 onClick={() => navigate('/')}
                 className="mr-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeftIcon className="w-5 h-5" />
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -189,7 +189,7 @@ const Parameters: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center text-sm text-gray-500">
-              <Brain className="w-4 h-4 mr-1" />
+              <CpuChipIcon className="w-4 h-4 mr-1" />
               <span>IA Ativa</span>
             </div>
           </div>
@@ -202,7 +202,7 @@ const Parameters: React.FC = () => {
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Settings className="w-5 h-5 mr-2" />
+                <CogIcon className="w-5 h-5 mr-2" />
                 Configurações do Sistema
               </h2>
             </div>
@@ -266,7 +266,7 @@ const Parameters: React.FC = () => {
               {/* Configurações de IA */}
               <div>
                 <h3 className="text-md font-medium text-gray-900 mb-4 flex items-center">
-                  <Brain className="w-4 h-4 mr-2" />
+                  <CpuChipIcon className="w-4 h-4 mr-2" />
                   Configurações de IA
                 </h3>
                 <div className="space-y-4">
@@ -310,12 +310,12 @@ const Parameters: React.FC = () => {
               >
                 {saving ? (
                   <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
                     Salvando...
                   </>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 mr-2" />
+                    <DocumentCheckIcon className="w-4 h-4 mr-2" />
                     Salvar Configurações
                   </>
                 )}
@@ -328,21 +328,21 @@ const Parameters: React.FC = () => {
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Brain className="w-5 h-5 mr-2" />
+                  <CpuChipIcon className="w-5 h-5 mr-2" />
                   Perfis por Categoria
                 </h2>
                 <button
                   onClick={() => setShowNewProfile(true)}
                   className="bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                  <Plus className="w-4 h-4" />
+                  <PlusIcon className="w-4 h-4" />
                 </button>
               </div>
             </div>
             <div className="p-6">
               {categoryProfiles.length === 0 ? (
                 <div className="text-center py-8">
-                  <Brain className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <CpuChipIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">Nenhum perfil configurado</p>
                   <p className="text-sm text-gray-400 mt-1">
                     Crie perfis para melhorar a precisão da IA
@@ -368,13 +368,13 @@ const Parameters: React.FC = () => {
                             onClick={() => setEditingProfile(profile)}
                             className="p-1 text-gray-400 hover:text-gray-600"
                           >
-                            <Edit className="w-4 h-4" />
+                            <PencilIcon className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => deleteCategoryProfile(profile.id)}
                             className="p-1 text-gray-400 hover:text-red-600"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <TrashIcon className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -642,12 +642,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onSave, onCancel, on
         >
           {saving ? (
             <>
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
               Salvando...
             </>
           ) : (
             <>
-              <Save className="w-4 h-4 mr-2" />
+              <DocumentCheckIcon className="w-4 h-4 mr-2" />
               Salvar Perfil
             </>
           )}

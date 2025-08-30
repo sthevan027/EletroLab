@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Save, X, Zap } from 'lucide-react';
+import { PlusIcon, DocumentCheckIcon, XMarkIcon, BoltIcon } from '@heroicons/react/24/outline';
 import * as db from '../services/db-compat';
 import { Equipment, TestType } from '../types';
 import { 
@@ -241,7 +241,7 @@ export default function NewReport() {
               onClick={addTest}
               className="btn-primary"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <PlusIcon className="h-4 w-4 mr-2" />
               Adicionar Teste
             </button>
           </div>
@@ -263,7 +263,7 @@ export default function NewReport() {
                       onClick={() => removeTest(index)}
                       className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                     >
-                      <X className="h-4 w-4" />
+                      <XMarkIcon className="h-4 w-4" />
                     </button>
                   </div>
 
@@ -315,7 +315,7 @@ export default function NewReport() {
                           className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-200 dark:hover:bg-gray-600"
                           title="Gerar valor aleatório"
                         >
-                          <Zap className="h-4 w-4" />
+                          <BoltIcon className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
@@ -422,7 +422,7 @@ export default function NewReport() {
             {loading ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
             ) : (
-              <Save className="h-4 w-4 mr-2" />
+              <DocumentCheckIcon className="h-4 w-4 mr-2" />
             )}
             Salvar Relatório
           </button>

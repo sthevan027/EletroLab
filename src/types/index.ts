@@ -245,6 +245,7 @@ export interface MultiPhaseReport {
   equipment?: {
     tag: string;
     category: string;
+    model?: string;
   };
   readings: {
     phase: number;

@@ -428,6 +428,15 @@ export const dbUtils = {
     }
   },
 
+  async getIRReport(id: string): Promise<IRReport | null> {
+    try {
+      return await db.irReports.get(id) || null;
+    } catch (error) {
+      console.error('Erro ao buscar relatório IR:', error);
+      return null;
+    }
+  },
+
   async updateIRReport(id: string, report: Partial<IRReport>): Promise<void> {
     try {
       await db.irReports.update(id, report);
@@ -539,6 +548,15 @@ export const dbUtils = {
     } catch (error) {
       console.error('Erro ao buscar relatórios multiphase:', error);
       return [];
+    }
+  },
+
+  async getMultiPhaseReport(id: string): Promise<MultiPhaseReport | null> {
+    try {
+      return await db.multiPhaseReports.get(id) || null;
+    } catch (error) {
+      console.error('Erro ao buscar relatório multiphase:', error);
+      return null;
     }
   },
 

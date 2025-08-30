@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Download, ArrowLeft } from 'lucide-react';
+import { ArrowDownTrayIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import * as db from '../services/db-compat';
 import { IRReport as Report, Test, Equipment } from '../types';
 import { formatDate, formatTestValue } from '../utils/validation';
@@ -65,7 +65,7 @@ export default function ReportDetail() {
             onClick={() => window.history.back()}
             className="btn-secondary"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeftIcon className="h-4 w-4 mr-2" />
             Voltar
           </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -76,7 +76,7 @@ export default function ReportDetail() {
           onClick={() => {/* TODO: Implementar exportação */}}
           className="btn-primary"
         >
-          <Download className="h-4 w-4 mr-2" />
+          <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
           Exportar PDF
         </button>
       </div>
