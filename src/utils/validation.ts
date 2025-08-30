@@ -640,8 +640,8 @@ export function validateEquipment(e: import('../types').Equipment) {
   return { ok: true as const, errors: [] as string[] };
 }
 
-// Se você já tem validateIRReport, reexporte como validateReport
-export { validateReport as validateIRReport };
+// Compatibilidade: exportar validateIRReport como validateReport
+export { validateIRReport as validateReport };
 
 // Pequenos utilitários que as páginas antigas esperam:
 export function validateTest() {
@@ -657,4 +657,13 @@ export function classifyTest(value: number) {
   return value >= 1_000_000 ? 'OK' : 'ALERTA';
 }
 
-// Formatações de compatibilidade - usar as funções originais acima
+// Formatações de compatibilidade
+export function formatDate(date: string | Date): string {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('pt-BR');
+}
+
+export function formatTestValue(value: number, unit: string): string {
+  return `${value.toFixed(2)} ${unit}`;
+}

@@ -4,7 +4,7 @@ import { Plus, Save, X, Zap } from 'lucide-react';
 import * as db from '../services/db-compat';
 import { Equipment, TestType } from '../types';
 import { 
-  validateReport, 
+  validateIRReport, 
   validateTest, 
   generateRandomTestValue, 
   classifyTest 
@@ -85,15 +85,14 @@ export default function NewReport() {
     const test = tests[index];
     if (!test.equipmentId) return;
 
-    const selectedEquipment = equipment.find(e => e.id === test.equipmentId);
+    const selectedEquipment = equipment.find(e => String(e.id) === String(test.equipmentId));
     if (!selectedEquipment) return;
 
     try {
       const config = await db.getConfiguration();
-      const limits = config[test.testType][selectedEquipment.category];
       
-      const randomValue = generateRandomTestValue(test.testType, selectedEquipment.category);
-      const result = classifyTest(test.testType, randomValue, limits);
+      const randomValue = generateRandomTestValue();
+      const result = classifyTest(randomValue);
       
       updateTest(index, 'value', randomValue);
       updateTest(index, 'result', result);
@@ -109,7 +108,7 @@ export default function NewReport() {
       setLoading(true);
 
       // Validar relatório
-      const reportValidation = validateReport(reportForm);
+      const reportValidation = validateIRReport(reportForm);
       if (!reportValidation.isValid) {
         alert('Erro de validação no relatório: ' + reportValidation.errors.map(e => e.message).join(', '));
         return;
@@ -117,40 +116,40 @@ export default function NewReport() {
 
       // Validar testes
       for (let i = 0; i < tests.length; i++) {
-        const testValidation = validateTest(tests[i]);
-        if (!testValidation.isValid) {
-          alert(`Erro de validação no teste ${i + 1}: ` + testValidation.errors.map(e => e.message).join(', '));
+        const testValidation = validateTest();
+        if (!testValidation.ok) {
+          alert(`Erro de validação no teste ${i + 1}: ` + testValidation.errors.join(', '));
           return;
         }
       }
 
       // Criar relatório
       const reportId = await db.addReport({
+        id: crypto.randomUUID(),
+        category: 'cabo',
+        kv: 1.0,
+        readings: [],
+        dai: "Undefined",
+        isSaved: false,
+        createdAt: new Date(),
         ...reportForm,
-        status: 'rascunho',
-        tests: [],
-        attachments: []
-      });
+        status: 'rascunho'
+      } as any);
 
       // Criar testes
               const config = await db.getConfiguration();
       for (const testForm of tests) {
-        const selectedEquipment = equipment.find(e => e.id === testForm.equipmentId);
+        const selectedEquipment = equipment.find(e => String(e.id) === String(testForm.equipmentId));
         if (!selectedEquipment) continue;
-
-        const limits = config[testForm.testType][selectedEquipment.category];
         
         await db.addTest({
-          reportId,
+          reportId: Number(reportId.id),
           equipmentId: testForm.equipmentId,
-          testType: testForm.testType,
+          type: testForm.testType,
           value: testForm.value,
-          unit: testForm.unit,
-          result: testForm.result as any,
-          limits,
-          notes: testForm.notes,
-          performedBy: testForm.performedBy,
-          performedAt: testForm.performedAt
+          unit: testForm.unit as any,
+          classification: 'OK',
+          measuredAt: testForm.performedAt
         });
       }
 

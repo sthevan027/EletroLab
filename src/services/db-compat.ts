@@ -20,9 +20,13 @@ function convertEquipmentToCompat(equipment: EquipmentOriginal): Equipment {
 
 function convertReportToCompat(report: ReportOriginal): IRReport {
   return {
-    id: parseInt(report.id) || 0,
-    createdAt: report.createdAt,
-    category: report.client,
+    id: report.id,
+    createdAt: new Date(report.createdAt),
+    category: 'cabo' as any,
+    kv: 1.0,
+    readings: [],
+    dai: "Undefined",
+    isSaved: false,
     operator: report.responsible,
     site: report.location,
     client: report.client,
@@ -113,7 +117,7 @@ export async function addReport(r: IRReport) {
   try {
     const reportOriginal: Omit<ReportOriginal, 'id' | 'createdAt' | 'updatedAt'> = {
       number: String(r.id || Math.random()),
-      date: r.createdAt,
+      date: r.createdAt.toISOString(),
       client: r.client || '',
       location: r.site || '',
       responsible: r.operator || '',

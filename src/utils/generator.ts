@@ -3,7 +3,7 @@
  */
 
 import { Category, CategoryProfile, IRReport } from '../types';
-import { formatResistance, formatVoltage, getStandardTimeSeries, calculateDAI } from './units';
+import { formatResistance, formatVoltage, getStandardTimeSeries, calculateDAI, parseResistance } from './units';
 import { dbUtils } from '../db/database';
 
 /**
@@ -60,12 +60,42 @@ export async function gerarSerieIR(opts: IRGenerationOptions): Promise<IRGenerat
   const profile = await dbUtils.getCategoryProfile(category);
   
   // Gerar valores baseados no perfil
-  const readings = generateReadingsFromProfile(profile, kv, limitTOhm);
+  const readings = generateReadingsFromProfile(profile || getDefaultProfile(category), kv, limitTOhm);
   
   // Calcular DAI
   const dai = calculateDAI(readings);
   
   return { readings, dai };
+}
+
+/**
+ * Retorna um perfil padrão para uma categoria
+ */
+function getDefaultProfile(category: Category): CategoryProfile {
+  return {
+    id: crypto.randomUUID(),
+    category,
+    name: `Perfil ${category}`,
+    description: `Perfil padrão para ${category}`,
+    baseResistance: {
+      min: 1e6,
+      max: 10e6,
+      decay: 0.95
+    },
+    temperature: {
+      min: 20,
+      max: 25,
+      effect: 0.02
+    },
+    humidity: {
+      min: 50,
+      max: 60,
+      effect: 0.01
+    },
+    aiConfidence: 0.7,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
 }
 
 /**
@@ -256,18 +286,13 @@ export async function learnFromHistory(
   });
   
   // Salvar aprendizado
-  await dbUtils.saveAILearningHistory({
+  await dbUtils.recordAILearning({
     category,
     phaseCount: 1,
     phaseNames: ['single'],
-    baseValues: averages,
-    correlations: {
-      phaseToPhase: [],
-      phaseToGround: []
-    },
-    accuracy: 0.9,
-    confidence: 0.8,
-    usedCount: 1
+    input: 'generator_input',
+    output: 'generator_output',
+    createdAt: new Date().toISOString()
   });
 }
 

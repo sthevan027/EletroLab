@@ -114,13 +114,12 @@ const GenerateReport: React.FC = () => {
       
       // Aprender com a geração (IA)
       await dbUtils.recordAILearning({
-        id: `ai_${Date.now()}`,
+        id: Date.now(),
         category: formData.category,
         phaseCount: 1,
-        input: formData,
-        output: result,
-        confidence: 0.94,
-        createdAt: new Date()
+        input: JSON.stringify(formData),
+        output: JSON.stringify(result),
+        createdAt: new Date().toISOString()
       });
 
     } catch (error) {

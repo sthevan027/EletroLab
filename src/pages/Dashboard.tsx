@@ -16,10 +16,21 @@ import { dbUtils } from '../db/database';
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
     totalReports: 0,
+    totalEquipment: 0,
+    totalTests: 0,
     savedToday: 0,
     multiPhase: 0,
     aiLearning: 0,
-    recentReports: []
+    resultsDistribution: { BOM: 0, ACEITÁVEL: 0, REPROVADO: 0 },
+    categoryDistribution: {
+      motor: 0,
+      painel: 0,
+      cabo: 0,
+      megger: 0,
+      outros: 0
+    },
+    recentReports: [],
+    recentTests: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -40,17 +51,18 @@ const Dashboard: React.FC = () => {
   };
 
   const formatReportTitle = (report: IRReport | MultiPhaseReport) => {
-    if ('reports' in report) {
+    if ('reports' in report && report.reports) {
       // MultiPhaseReport
       return `${report.reports.length} Fases - ${report.reports[0]?.id || 'N/A'}`;
     } else {
       // IRReport
-      return `${report.category.toUpperCase()} - ${report.tag || 'Sem Tag'}`;
+      return `${(report as IRReport).category.toUpperCase()} - ${(report as IRReport).tag || 'Sem Tag'}`;
     }
   };
 
-  const formatReportDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', {
+  const formatReportDate = (date: Date | string) => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -230,11 +242,11 @@ const Dashboard: React.FC = () => {
                   >
                     <div className="flex items-center">
                       <div className="p-2 bg-gray-100 rounded-lg mr-4">
-                        {getReportIcon(report)}
+                        {getReportIcon(report as any)}
                       </div>
                       <div>
                         <h3 className="font-medium text-gray-900">
-                          {formatReportTitle(report)}
+                          {formatReportTitle(report as any)}
                         </h3>
                         <p className="text-sm text-gray-600">
                           {formatReportDate(report.createdAt)}
@@ -242,7 +254,7 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {report.isSaved && (
+                      {(report as any).isSaved && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           <Save className="w-3 h-3 mr-1" />
                           Salvo

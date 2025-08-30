@@ -44,16 +44,22 @@ export default function EquipmentPage() {
     e.preventDefault();
     
     try {
-      const validation = validateEquipment(formData);
-      if (!validation.isValid) {
-        alert('Erro de validação: ' + validation.errors.map(e => e.message).join(', '));
+      const equipmentData = {
+        ...formData,
+        name: formData.tag || formData.description,
+        id: editingEquipment?.id
+      };
+      
+      const validation = validateEquipment(equipmentData);
+      if (!validation.ok) {
+        alert('Erro de validação: ' + validation.errors.join(', '));
         return;
       }
 
-      if (editingEquipment) {
-        await db.updateEquipment(editingEquipment.id, formData);
+      if (editingEquipment && editingEquipment.id !== undefined) {
+        await db.updateEquipment(editingEquipment.id, equipmentData);
       } else {
-        await db.addEquipment(formData);
+        await db.addEquipment(equipmentData);
       }
 
       setShowForm(false);
@@ -69,22 +75,22 @@ export default function EquipmentPage() {
   const handleEdit = (equipment: Equipment) => {
     setEditingEquipment(equipment);
     setFormData({
-      tag: equipment.tag,
+      tag: equipment.tag || '',
       category: equipment.category,
-      description: equipment.description,
-      location: equipment.location,
-      manufacturer: equipment.manufacturer,
-      model: equipment.model,
-      serialNumber: equipment.serialNumber,
-      installationDate: equipment.installationDate,
-      lastMaintenance: equipment.lastMaintenance,
-      status: equipment.status,
-      notes: equipment.notes
+      description: equipment.description || '',
+      location: equipment.location || '',
+      manufacturer: equipment.manufacturer || '',
+      model: equipment.model || '',
+      serialNumber: equipment.serialNumber || '',
+      installationDate: equipment.installationDate || '',
+      lastMaintenance: equipment.lastMaintenance || '',
+      status: equipment.status || 'ativo',
+      notes: equipment.notes || ''
     });
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string | number) => {
     if (confirm('Tem certeza que deseja excluir este equipamento?')) {
       try {
         await db.deleteEquipment(id);
@@ -113,9 +119,9 @@ export default function EquipmentPage() {
   };
 
   const filteredEquipment = equipment.filter(equip =>
-    equip.tag.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    equip.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    equip.location.toLowerCase().includes(searchTerm.toLowerCase())
+    (equip.tag || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (equip.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (equip.location || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -336,10 +342,10 @@ export default function EquipmentPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {equip.tag}
+                        {equip.tag || 'N/A'}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {equip.description}
+                        {equip.description || 'N/A'}
                       </div>
                     </div>
                   </td>
@@ -347,7 +353,7 @@ export default function EquipmentPage() {
                     {equip.category}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {equip.location}
+                    {equip.location || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`
@@ -356,7 +362,7 @@ export default function EquipmentPage() {
                       ${equip.status === 'inativo' ? 'badge-danger' : ''}
                       ${equip.status === 'manutencao' ? 'badge-warning' : ''}
                     `}>
-                      {equip.status.toUpperCase()}
+                      {(equip.status || 'ativo').toUpperCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -368,7 +374,7 @@ export default function EquipmentPage() {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(equip.id)}
+                        onClick={() => handleDelete(equip.id || 0)}
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       >
                         <Trash2 className="h-4 w-4" />

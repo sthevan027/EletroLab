@@ -97,6 +97,13 @@ export type EquipmentCompat = {
   manufacturer?: string;
   model?: string;
   tag?: string;
+  description?: string;
+  location?: string;
+  serialNumber?: string;
+  installationDate?: string;
+  lastMaintenance?: string;
+  status?: 'ativo' | 'inativo' | 'manutencao';
+  notes?: string;
   calibrationDue?: string;   // Data de validade
   nextCalibration?: string;  // Próxima calibração
 };
@@ -108,10 +115,15 @@ export type ResistanceUnit = 'Ω' | 'kΩ' | 'MΩ' | 'GΩ' | 'TΩ';
 export type TestCompat = {
   id?: number;
   reportId: number;
+  equipmentId?: string;
+  testType?: TestTypeCompat;
   type: TestTypeCompat;
   value: number;
   unit: ResistanceUnit;
+  result?: 'BOM' | 'ACEITÁVEL' | 'REPROVADO';
   classification: 'OK' | 'ALERTA' | 'FALHA';
+  performedAt?: string;
+  performedBy?: string;
   measuredAt: string; // ISO
 };
 
@@ -134,6 +146,13 @@ export interface IRReport {
   operator?: string;
   manufacturer?: string;
   model?: string;
+  date?: string;
+  location?: string;
+  responsible?: string;
+  status?: 'rascunho' | 'finalizado' | 'aprovado' | 'reprovado';
+  observations?: string;
+  recommendations?: string;
+  notes?: string;
   
   // Série de tempos fixa
   readings: {
@@ -201,7 +220,9 @@ export interface Parameter {
 export interface MultiPhaseConfig {
   id: string;
   equipmentType: Category;
-  phases: number;
+  phases: {
+    names: string[];
+  };
   voltage: number;
   duration: number;
   intervals: number[];
@@ -215,6 +236,16 @@ export interface MultiPhaseReport {
   configId: string;
   equipmentTag: string;
   operator: string;
+  reports?: any[];
+  summary?: {
+    phaseCount: number;
+    averageResistance: number;
+    status: string;
+  };
+  equipment?: {
+    tag: string;
+    category: string;
+  };
   readings: {
     phase: number;
     time: string;
@@ -236,20 +267,24 @@ export type AILearningHistory = {
   prompt?: string;
   category?: string;
   phaseCount?: number;
+  phaseNames?: string[];
 };
 
 // === ALIASES PARA COMPATIBILIDADE ===
-export { EquipmentCompat as Equipment };
-export { EquipmentCategoryCompat as EquipmentCategory };
-export { TestTypeCompat as TestType };
-export { TestCompat as Test };
-export { IRReport as ReportCompat };
+export type { EquipmentCompat as Equipment };
+export type { EquipmentCategoryCompat as EquipmentCategory };
+export type { TestTypeCompat as TestType };
+export type { TestCompat as Test };
+export type { IRReport as ReportCompat };
 
 // === TIPOS DE ESTATÍSTICAS ===
 export interface DashboardStats {
   totalReports: number;
   totalEquipment: number;
   totalTests: number;
+  savedToday: number;
+  multiPhase: number;
+  aiLearning: number;
   resultsDistribution: {
     BOM: number;
     ACEITÁVEL: number;
@@ -265,6 +300,8 @@ export interface ExportOptions {
   format: 'pdf' | 'csv';
   includeTests: boolean;
   includeCharts: boolean;
+  includeMetadata?: boolean;
+  includeComments?: boolean;
   dateRange?: {
     start: string;
     end: string;
@@ -275,9 +312,12 @@ export interface ExportOptions {
 export interface ValidationError {
   field: string;
   message: string;
+  type?: string;
+  severity?: string;
 }
 
 export interface ValidationResult {
+  ok?: boolean;
   isValid: boolean;
   errors: ValidationError[];
 }
@@ -330,4 +370,24 @@ export interface TestFilters {
     end: string;
   };
   equipmentId?: string;
+}
+
+// === TIPOS PARA GERAÇÃO ===
+export interface IRGenerationOptions {
+  category: Category;
+  kv: number;
+  limitTOhm?: number;
+  tag?: string;
+  client?: string;
+  site?: string;
+  operator?: string;
+  manufacturer?: string;
+  model?: string;
+  aiEnabled?: boolean;
+}
+
+export interface IRGenerationResult {
+  report: IRReport;
+  confidence: number;
+  warnings?: string[];
 }

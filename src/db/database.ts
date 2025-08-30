@@ -567,6 +567,84 @@ export const dbUtils = {
     }
   },
 
+  // Dashboard Stats
+  async getDashboardStats(): Promise<any> {
+    try {
+      const totalReports = await db.irReports.count();
+      const totalEquipment = await db.equipment.count();
+      const totalTests = await db.test.count();
+      const today = new Date().toISOString().split('T')[0];
+      const savedToday = await db.irReports.filter(r => r.createdAt.toISOString().startsWith(today)).count();
+      const multiPhase = await db.multiPhaseReports.count();
+      const aiLearning = await db.aiLearningHistory.count();
+      
+      return {
+        totalReports,
+        totalEquipment,
+        totalTests,
+        savedToday,
+        multiPhase,
+        aiLearning,
+        resultsDistribution: { BOM: 0, ACEITÁVEL: 0, REPROVADO: 0 },
+        categoryDistribution: {},
+        recentReports: []
+      };
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+      return {
+        totalReports: 0,
+        totalEquipment: 0,
+        totalTests: 0,
+        savedToday: 0,
+        multiPhase: 0,
+        aiLearning: 0,
+        resultsDistribution: { BOM: 0, ACEITÁVEL: 0, REPROVADO: 0 },
+        categoryDistribution: {},
+        recentReports: []
+      };
+    }
+  },
+
+  // AI Learning
+  async recordAILearning(data: AILearningHistory): Promise<void> {
+    try {
+      await db.aiLearningHistory.add(data);
+    } catch (error) {
+      console.error('Erro ao registrar aprendizado de IA:', error);
+      throw error;
+    }
+  },
+
+  // Report Number Generation
+  async getNextReportNumber(): Promise<string> {
+    try {
+      const count = await db.irReports.count();
+      return `REP-${String(count + 1).padStart(4, '0')}`;
+    } catch (error) {
+      console.error('Erro ao gerar número do relatório:', error);
+      return `REP-${String(Date.now()).slice(-4)}`;
+    }
+  },
+
+  // Category Profiles
+  async updateCategoryProfile(profile: CategoryProfile): Promise<void> {
+    try {
+      await db.categoryProfiles.put(profile);
+    } catch (error) {
+      console.error('Erro ao atualizar perfil de categoria:', error);
+      throw error;
+    }
+  },
+
+  async deleteCategoryProfile(id: string): Promise<void> {
+    try {
+      await db.categoryProfiles.delete(id);
+    } catch (error) {
+      console.error('Erro ao deletar perfil de categoria:', error);
+      throw error;
+    }
+  },
+
   // Função para limpar banco de dados (útil para testes)
   async clearDatabase(): Promise<void> {
     try {

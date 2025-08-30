@@ -21,12 +21,15 @@ const Parameters: React.FC = () => {
   const [saving, setSaving] = useState(false);
   
   const [systemConfig, setSystemConfig] = useState<SystemConfig>({
+    id: '',
     defaultOperator: '',
     defaultClient: '',
     defaultSite: '',
     aiEnabled: true,
     aiLearningRate: 0.1,
-    defaultLimitTOhm: 5
+    defaultLimitTOhm: 5,
+    createdAt: new Date(),
+    updatedAt: new Date()
   });
 
   const [categoryProfiles, setCategoryProfiles] = useState<CategoryProfile[]>([]);
@@ -80,7 +83,7 @@ const Parameters: React.FC = () => {
       
       if (profile.id) {
         // Atualizar perfil existente
-        await dbUtils.updateCategoryProfile(profile);
+        await dbUtils.saveCategoryProfile(profile);
       } else {
         // Criar novo perfil
         await dbUtils.saveCategoryProfile(profile);

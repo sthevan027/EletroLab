@@ -10,7 +10,7 @@ import { IRReport, MultiPhaseReport, ExportOptions } from '../types';
  */
 export async function exportCupomPDF(
   report: IRReport, 
-  options: ExportOptions = { format: 'pdf', includeMetadata: true, includeComments: false }
+  options: ExportOptions = { format: 'pdf', includeTests: true, includeCharts: false, includeMetadata: true, includeComments: false }
 ): Promise<Blob> {
   const html = generateCupomHTML(report, options);
   
@@ -34,13 +34,13 @@ export async function exportCupomPDF(
  */
 export async function exportMultiPhasePDF(
   report: MultiPhaseReport,
-  options: ExportOptions = { format: 'pdf', includeMetadata: true, includeComments: true }
+  options: ExportOptions = { format: 'pdf', includeTests: true, includeCharts: true, includeMetadata: true, includeComments: true }
 ): Promise<Blob> {
   const html = generateMultiPhaseHTML(report, options);
   
   const pdfOptions = {
     margin: [10, 10, 10, 10],
-    filename: `relatorio_multifase_${report.reports.length}_fases_${new Date().toISOString().split('T')[0]}.pdf`,
+    filename: `relatorio_multifase_${report.reports?.length || 0}_fases_${new Date().toISOString().split('T')[0]}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { 
@@ -180,15 +180,15 @@ function generateCupomHTML(report: IRReport, options: ExportOptions): string {
 function generateMultiPhaseHTML(report: MultiPhaseReport, options: ExportOptions): string {
   const metadata = options.includeMetadata ? `
     <div class="metadata">
-      <p><strong>Total de Relatórios:</strong> ${report.reports.length}</p>
-      <p><strong>Fases/Fases:</strong> ${report.summary.phaseToPhase}</p>
-      <p><strong>Fases/Massa:</strong> ${report.summary.phaseToGround}</p>
-      ${report.equipment.model ? `<p><strong>Modelo:</strong> ${report.equipment.model}</p>` : ''}
-      ${report.equipment.unitId ? `<p><strong>Unit ID:</strong> ${report.equipment.unitId}</p>` : ''}
+      <p><strong>Total de Relatórios:</strong> ${report.reports?.length || 0}</p>
+      <p><strong>Fases/Fases:</strong> ${(report.summary as any)?.phaseToPhase || 'N/A'}</p>
+      <p><strong>Fases/Massa:</strong> ${(report.summary as any)?.phaseToGround || 'N/A'}</p>
+      ${(report.equipment as any)?.model ? `<p><strong>Modelo:</strong> ${(report.equipment as any).model}</p>` : ''}
+      ${report.equipment?.tag ? `<p><strong>Tag:</strong> ${report.equipment.tag}</p>` : ''}
     </div>
   ` : '';
 
-  const reportsHTML = report.reports.map(subReport => `
+  const reportsHTML = (report.reports || []).map(subReport => `
     <div class="sub-report">
       <h3>${subReport.id} - Test No: ${subReport.testNo}</h3>
       <p><strong>Tipo:</strong> ${subReport.type === 'phase-phase' ? 'Fase/Fase' : 'Fase/Massa'}</p>
@@ -343,7 +343,7 @@ export function exportMultiPhaseCSV(report: MultiPhaseReport): string {
   const headers = ['Report ID', 'Test No', 'Type', 'Description', 'Phases', 'Time', 'kV', 'Resistance', 'DAI', 'Comments'];
   const rows: string[][] = [];
   
-  report.reports.forEach(subReport => {
+  (report.reports || []).forEach(subReport => {
     subReport.readings.forEach((reading, index) => {
       rows.push([
         subReport.id,
@@ -391,7 +391,7 @@ export function downloadFile(content: string | Blob, filename: string, mimeType:
 export async function exportIRReport(
   report: IRReport, 
   format: 'pdf' | 'csv' = 'pdf',
-  options: ExportOptions = { format, includeMetadata: true, includeComments: false }
+  options: ExportOptions = { format, includeTests: true, includeCharts: false, includeMetadata: true, includeComments: false }
 ): Promise<void> {
   const timestamp = new Date().toISOString().split('T')[0];
   const baseFilename = `relatorio_ir_${report.category}_${timestamp}`;
@@ -411,10 +411,10 @@ export async function exportIRReport(
 export async function exportMultiPhaseReport(
   report: MultiPhaseReport,
   format: 'pdf' | 'csv' = 'pdf',
-  options: ExportOptions = { format, includeMetadata: true, includeComments: true }
+  options: ExportOptions = { format, includeTests: true, includeCharts: true, includeMetadata: true, includeComments: true }
 ): Promise<void> {
   const timestamp = new Date().toISOString().split('T')[0];
-  const baseFilename = `relatorio_multifase_${report.reports.length}_fases_${timestamp}`;
+  const baseFilename = `relatorio_multifase_${report.reports?.length || 0}_fases_${timestamp}`;
   
   if (format === 'pdf') {
     const blob = await exportMultiPhasePDF(report, options);
@@ -431,7 +431,7 @@ export async function exportMultiPhaseReport(
 export async function exportBatchReports(
   reports: (IRReport | MultiPhaseReport)[],
   format: 'pdf' | 'csv' = 'pdf',
-  options: ExportOptions = { format, includeMetadata: true, includeComments: true }
+  options: ExportOptions = { format, includeTests: true, includeCharts: true, includeMetadata: true, includeComments: true }
 ): Promise<void> {
   if (reports.length === 0) return;
   
@@ -441,7 +441,7 @@ export async function exportBatchReports(
     if ('reports' in report) {
       await exportMultiPhaseReport(report, format, options);
     } else {
-      await exportIRReport(report, format, options);
+      await exportIRReport(report as IRReport, format, options);
     }
     return;
   }
@@ -464,10 +464,10 @@ export async function exportBatchReports(
     } else {
       const filename = `relatorio_ir_${i + 1}_${timestamp}`;
       if (format === 'pdf') {
-        const blob = await exportCupomPDF(report, options);
+        const blob = await exportCupomPDF(report as IRReport, options);
         downloadFile(blob, `${filename}.pdf`, 'application/pdf');
       } else {
-        const csv = exportCupomCSV(report);
+        const csv = exportCupomCSV(report as IRReport);
         downloadFile(csv, `${filename}.csv`, 'text/csv');
       }
     }

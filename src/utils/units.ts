@@ -191,8 +191,8 @@ export function getStandardTimeMinutes(): number[] {
   return [15, 30, 45, 60];
 }
 
-// Ex.: "5 MΩ" -> 5_000_000
-export function parseResistance(input: string): number {
+// Função alternativa de parseamento (para compatibilidade)
+export function parseResistanceFromInput(input: string): number {
   if (!input) return 0;
   const m = String(input).trim().match(/^([\d.,]+)\s*(t?g?m?k?)? ?(ohm|Ω)?$/i);
   if (!m) return Number(input) || 0;

@@ -93,7 +93,7 @@ export default function ReportDetail() {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Data</label>
-            <p className="text-sm text-gray-900 dark:text-white">{formatDate(report.date)}</p>
+            <p className="text-sm text-gray-900 dark:text-white">{formatDate(report.date || report.createdAt)}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Cliente</label>
@@ -101,11 +101,11 @@ export default function ReportDetail() {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Local</label>
-            <p className="text-sm text-gray-900 dark:text-white">{report.location}</p>
+            <p className="text-sm text-gray-900 dark:text-white">{report.location || 'N/A'}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Responsável</label>
-            <p className="text-sm text-gray-900 dark:text-white">{report.responsible}</p>
+            <p className="text-sm text-gray-900 dark:text-white">{report.responsible || 'N/A'}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
@@ -116,7 +116,7 @@ export default function ReportDetail() {
               ${report.status === 'finalizado' ? 'badge-info' : ''}
               ${report.status === 'rascunho' ? 'badge-warning' : ''}
             `}>
-              {report.status.toUpperCase()}
+              {(report.status || 'rascunho').toUpperCase()}
             </span>
           </div>
         </div>
@@ -154,14 +154,14 @@ export default function ReportDetail() {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {tests.map((test) => {
-                  const equip = equipment.find(e => e.id === test.equipmentId);
+                  const equip = equipment.find(e => String(e.id) === String(test.equipmentId));
                   return (
                     <tr key={test.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {equip ? equip.tag : 'N/A'}
+                        {equip ? (equip.tag || 'N/A') : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {test.testType.toUpperCase()}
+                        {(test.testType || test.type || 'N/A').toUpperCase()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {formatTestValue(test.value, test.unit)}
@@ -173,14 +173,14 @@ export default function ReportDetail() {
                           ${test.result === 'ACEITÁVEL' ? 'badge-warning' : ''}
                           ${test.result === 'REPROVADO' ? 'badge-danger' : ''}
                         `}>
-                          {test.result}
+                          {test.result || test.classification || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(test.performedAt)}
+                        {formatDate(test.performedAt || test.measuredAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {test.performedBy}
+                        {test.performedBy || 'N/A'}
                       </td>
                     </tr>
                   );
