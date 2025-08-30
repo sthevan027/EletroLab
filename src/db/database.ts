@@ -13,6 +13,7 @@ import {
   TestOriginal, 
   TestConfiguration 
 } from '../types';
+import { cloud } from './cloud';
 
 export interface ConfigRecord extends TestConfiguration {
   id: string;
@@ -264,6 +265,8 @@ export const dbUtils = {
         updatedAt: now
       };
       await db.report.add(newReport);
+      // Envia para nuvem se disponível
+      try { if (cloud.isEnabled()) await cloud.saveIRReport(cloud.getUserId(), newReport); } catch {}
       return id;
     } catch (error) {
       console.error('Erro ao adicionar relatório:', error);
@@ -542,6 +545,7 @@ export const dbUtils = {
   async saveMultiPhaseReport(report: MultiPhaseReport): Promise<void> {
     try {
       await db.multiPhaseReports.add(report);
+      try { if (cloud.isEnabled()) await cloud.saveMultiReport(cloud.getUserId(), { ...report, createdAt: report.createdAt }); } catch {}
     } catch (error) {
       console.error('Erro ao salvar relatório multiphase:', error);
       throw error;
@@ -555,6 +559,91 @@ export const dbUtils = {
     } catch (error) {
       console.error('Erro ao buscar parâmetros:', error);
       return [];
+    }
+  },
+
+  // Backup/Restore simples (banco local IndexedDB)
+  async exportAll(): Promise<any> {
+    try {
+      const [equipment, reports, tests, irReports, multiConfigs, multiReports, ai, profiles, system, config] = await Promise.all([
+        db.equipment.toArray(),
+        db.report.toArray(),
+        db.test.toArray(),
+        db.irReports.toArray(),
+        db.multiPhaseConfigs.toArray(),
+        db.multiPhaseReports.toArray(),
+        db.aiLearningHistory.toArray(),
+        db.categoryProfiles.toArray(),
+        db.systemConfigs.toArray(),
+        db.configuration.toArray()
+      ]);
+      return {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        equipment,
+        reports,
+        tests,
+        irReports,
+        multiConfigs,
+        multiReports,
+        ai,
+        profiles,
+        system,
+        configuration: config
+      };
+    } catch (error) {
+      console.error('Erro ao exportar dados do banco:', error);
+      throw error;
+    }
+  },
+
+  async importAll(data: any, options: { clearBefore?: boolean } = { clearBefore: true }): Promise<void> {
+    const clearBefore = options.clearBefore !== false;
+    try {
+      if (clearBefore) {
+        await db.transaction('rw', db.equipment, db.report, db.test, async () => {
+          await Promise.all([
+            db.equipment.clear(),
+            db.report.clear(),
+            db.test.clear(),
+          ]);
+        });
+        await db.transaction('rw', db.irReports, db.multiPhaseConfigs, db.multiPhaseReports, async () => {
+          await Promise.all([
+            db.irReports.clear(),
+            db.multiPhaseConfigs.clear(),
+            db.multiPhaseReports.clear(),
+          ]);
+        });
+        await db.transaction('rw', db.aiLearningHistory, db.categoryProfiles, db.systemConfigs, db.configuration, async () => {
+          await Promise.all([
+            db.aiLearningHistory.clear(),
+            db.categoryProfiles.clear(),
+            db.systemConfigs.clear(),
+            db.configuration.clear()
+          ]);
+        });
+      }
+
+      await db.transaction('rw', db.equipment, db.report, db.test, async () => {
+        if (data.equipment?.length) await db.equipment.bulkAdd(data.equipment);
+        if (data.reports?.length) await db.report.bulkAdd(data.reports);
+        if (data.tests?.length) await db.test.bulkAdd(data.tests);
+      });
+      await db.transaction('rw', db.irReports, db.multiPhaseConfigs, db.multiPhaseReports, async () => {
+        if (data.irReports?.length) await db.irReports.bulkAdd(data.irReports);
+        if (data.multiConfigs?.length) await db.multiPhaseConfigs.bulkAdd(data.multiConfigs);
+        if (data.multiReports?.length) await db.multiPhaseReports.bulkAdd(data.multiReports);
+      });
+      await db.transaction('rw', db.aiLearningHistory, db.categoryProfiles, db.systemConfigs, db.configuration, async () => {
+        if (data.ai?.length) await db.aiLearningHistory.bulkAdd(data.ai);
+        if (data.profiles?.length) await db.categoryProfiles.bulkAdd(data.profiles);
+        if (data.system?.length) await db.systemConfigs.bulkAdd(data.system);
+        if (data.configuration?.length) await db.configuration.bulkAdd(data.configuration);
+      });
+    } catch (error) {
+      console.error('Erro ao importar dados do banco:', error);
+      throw error;
     }
   },
 

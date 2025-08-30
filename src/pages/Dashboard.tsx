@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { DashboardStats, IRReport, MultiPhaseReport } from '../types';
 import { dbUtils } from '../db/database';
+import { cloud } from '../db/cloud';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
@@ -42,7 +43,22 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       const dashboardStats = await dbUtils.getDashboardStats();
-      setStats(dashboardStats);
+
+      // Se nuvem estiver ativa, buscar recentes remotos e mesclar
+      if (cloud.isEnabled()) {
+        try {
+          const remote = await cloud.getRecentReports(cloud.getUserId(), 5);
+          if (remote.length > 0) {
+            setStats({ ...dashboardStats, recentReports: remote as any });
+          } else {
+            setStats(dashboardStats);
+          }
+        } catch {
+          setStats(dashboardStats);
+        }
+      } else {
+        setStats(dashboardStats);
+      }
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
     } finally {
