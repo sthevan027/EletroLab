@@ -11,8 +11,26 @@
   }
   
   body {
-    @apply bg-gray-900 text-gray-100;
+    @apply bg-gray-50 text-gray-900;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  /* Melhor contraste para textos */
+  .text-gray-500 {
+    @apply text-gray-700 !important;
+  }
+  
+  .text-gray-400 {
+    @apply text-gray-600 !important;
+  }
+  
+  .text-gray-600 {
+    @apply text-gray-800 !important;
+  }
+  
+  /* Textos específicos de formulários */
+  .placeholder-gray-400::placeholder {
+    @apply text-gray-600 !important;
   }
 }
 
@@ -26,7 +44,7 @@
   }
   
   .btn-secondary {
-    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600;
+    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500 font-semibold;
   }
   
   .btn-success {
@@ -46,11 +64,11 @@
   }
   
   .input {
-    @apply block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400;
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900;
   }
   
   .label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+    @apply block text-sm font-semibold text-gray-800 mb-1;
   }
   
   .badge {
@@ -86,5 +104,18 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* Melhorar contraste de textos específicos */
+  .text-description {
+    @apply text-gray-700 font-medium !important;
+  }
+  
+  .text-muted {
+    @apply text-gray-600 !important;
+  }
+  
+  .text-subtitle {
+    @apply text-gray-800 font-medium !important;
   }
 }

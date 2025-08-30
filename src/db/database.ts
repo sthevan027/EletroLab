@@ -570,14 +570,60 @@ export const dbUtils = {
   // Dashboard Stats
   async getDashboardStats(): Promise<any> {
     try {
-      const totalReports = await db.irReports.count();
-      const totalEquipment = await db.equipment.count();
-      const totalTests = await db.test.count();
+      // Totais
+      const [irCount, mpCount, origCount, totalEquipment, totalTests] = await Promise.all([
+        db.irReports.count(),
+        db.multiPhaseReports.count(),
+        db.report.count(),
+        db.equipment.count(),
+        db.test.count()
+      ]);
+
+      const totalReports = irCount + mpCount + origCount;
+
+      // Cálculo de "salvos hoje" para ambos os tipos
       const today = new Date().toISOString().split('T')[0];
-      const savedToday = await db.irReports.filter(r => r.createdAt.toISOString().startsWith(today)).count();
-      const multiPhase = await db.multiPhaseReports.count();
-      const aiLearning = await db.aiLearningHistory.count();
-      
+      const [savedIrToday, savedMpToday, savedOrigToday] = await Promise.all([
+        db.irReports.filter(r => {
+          const d = (r as any).createdAt instanceof Date ? (r as any).createdAt : new Date((r as any).createdAt);
+          return d.toISOString().startsWith(today);
+        }).count(),
+        db.multiPhaseReports.filter(r => {
+          const d = (r as any).createdAt instanceof Date ? (r as any).createdAt : new Date((r as any).createdAt);
+          return d.toISOString().startsWith(today);
+        }).count(),
+        db.report.filter(r => {
+          const d = (r as any).createdAt ? new Date((r as any).createdAt) : new Date(0);
+          return d.toISOString().startsWith(today);
+        }).count()
+      ]);
+      const savedToday = savedIrToday + savedMpToday + savedOrigToday;
+
+      // IA e Multi-fase
+      const [multiPhase, aiLearning] = await Promise.all([
+        db.multiPhaseReports.count(),
+        db.aiLearningHistory.count()
+      ]);
+
+      // Relatórios recentes: buscar últimos 5 de cada, mesclar e ordenar por data
+      const [irRecent, mpRecent, origRecentAll] = await Promise.all([
+        db.irReports.orderBy('createdAt').reverse().limit(5).toArray(),
+        db.multiPhaseReports.orderBy('createdAt').reverse().limit(5).toArray(),
+        db.report.toArray()
+      ]);
+      const origRecent = origRecentAll
+        .filter(r => (r as any).createdAt)
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5);
+
+      const recentReports = [...irRecent, ...mpRecent, ...origRecent]
+        .sort((a: any, b: any) => {
+          const da = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+          const dbt = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+          return dbt - da;
+        })
+        .slice(0, 5);
+
       return {
         totalReports,
         totalEquipment,
@@ -587,7 +633,7 @@ export const dbUtils = {
         aiLearning,
         resultsDistribution: { BOM: 0, ACEITÁVEL: 0, REPROVADO: 0 },
         categoryDistribution: {},
-        recentReports: []
+        recentReports
       };
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);

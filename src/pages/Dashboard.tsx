@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                EletriLab Ultra-MVP
+                EletriLab 
               </h1>
               <p className="text-gray-600 mt-1">
                 Gerador de Relatórios Megger/IR com IA

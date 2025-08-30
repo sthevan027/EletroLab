@@ -2,7 +2,7 @@
  * Gerador de séries IR para relatórios Megger
  */
 
-import { Category, CategoryProfile, IRReport } from '../types';
+import { Category, CategoryProfile, IRReport, MultiPhaseConfig, MultiPhaseReport } from '../types';
 import { formatResistance, formatVoltage, getStandardTimeSeries, calculateDAI, parseResistance } from './units';
 import { dbUtils } from '../db/database';
 
@@ -365,6 +365,221 @@ function generateReadingsFromHistory(
       resistance: formatResistance(value, limitTOhm)
     };
   });
+}
+
+/**
+ * Gera relatório multi-fase com IA
+ */
+export async function generateMultiPhaseReport(
+  config: MultiPhaseConfig,
+  options: {
+    equipmentTag: string;
+    operator: string;
+    phaseCombinations: string[][];
+    groundName: string;
+  }
+): Promise<{
+  report: MultiPhaseReport;
+  confidence: number;
+  warnings: string[];
+}> {
+  const warnings: string[] = [];
+  const phaseNames = config.phases.names;
+  
+  // Buscar perfil da categoria
+  const profile = await dbUtils.getCategoryProfile(config.equipmentType) || getDefaultProfile(config.equipmentType);
+  
+  // Gerar valores base para cada fase
+  const baseValues = phaseNames.map(() => {
+    const min = profile.baseResistance.min;
+    const max = profile.baseResistance.max;
+    return min + Math.random() * (max - min);
+  });
+  
+  // Gerar leituras para cada combinação e montar sub-relatórios
+  const readings: {
+    phase: number;
+    time: string;
+    resistance: string;
+    temperature?: number;
+    humidity?: number;
+  }[] = [];
+  const subReports: any[] = [];
+  
+  const times = getStandardTimeSeries();
+  
+  // Testes fase × fase
+  options.phaseCombinations.forEach((combo, comboIndex) => {
+    const phase1Index = phaseNames.indexOf(combo[0]);
+    const phase2Index = phaseNames.indexOf(combo[1]);
+    
+    if (phase1Index !== -1 && phase2Index !== -1) {
+      // Valor correlacionado entre as duas fases
+      const baseValue = (baseValues[phase1Index] + baseValues[phase2Index]) / 2;
+      const subReadings: { time: string; kv: string; resistance: string }[] = [];
+      
+      times.forEach(time => {
+        const timeMinutes = parseTime(time);
+        let value = simulateTimeDecay(baseValue, timeMinutes, profile.baseResistance.decay);
+        
+        // Aplicar fatores ambientais
+        const temperature = 20 + Math.random() * 10;
+        const humidity = 50 + Math.random() * 20;
+        value = applyEnvironmentalFactors(value, temperature, humidity, profile);
+        
+        // Variação aleatória
+        value = generateRandomVariation(value, 3);
+        
+        readings.push({
+          phase: comboIndex,
+          time,
+          resistance: formatResistance(value),
+          temperature,
+          humidity
+        });
+        subReadings.push({ time, kv: '1.00', resistance: formatResistance(value) });
+      });
+
+      // Monta sub-relatório desta combinação (4 leituras)
+      const daiValue = calculateDAI(
+        subReadings.map(r => ({ time: r.time, kv: r.kv, resistance: r.resistance }))
+      );
+      subReports.push({
+        id: `PP-${combo[0]}-${combo[1]}`,
+        testNo: comboIndex + 1,
+        type: 'phase-phase',
+        description: `${combo[0]} × ${combo[1]}`,
+        phases: [combo[0], combo[1]],
+        readings: subReadings,
+        dai: daiValue,
+        comments: ''
+      });
+    }
+  });
+  
+  // Testes fase × massa
+  phaseNames.forEach((phase, phaseIndex) => {
+    const baseValue = baseValues[phaseIndex] * 0.8; // Fase/massa tipicamente menor
+    const subReadings: { time: string; kv: string; resistance: string }[] = [];
+    
+    times.forEach(time => {
+      const timeMinutes = parseTime(time);
+      let value = simulateTimeDecay(baseValue, timeMinutes, profile.baseResistance.decay);
+      
+      // Aplicar fatores ambientais
+      const temperature = 20 + Math.random() * 10;
+      const humidity = 50 + Math.random() * 20;
+      value = applyEnvironmentalFactors(value, temperature, humidity, profile);
+      
+      // Variação aleatória
+      value = generateRandomVariation(value, 5);
+      
+      readings.push({
+        phase: phaseNames.length + phaseIndex, // Offset para fase/massa
+        time,
+        resistance: formatResistance(value),
+        temperature,
+        humidity
+      });
+      subReadings.push({ time, kv: '1.00', resistance: formatResistance(value) });
+    });
+
+    const daiValue = calculateDAI(
+      subReadings.map(r => ({ time: r.time, kv: r.kv, resistance: r.resistance }))
+    );
+    subReports.push({
+      id: `PG-${phase}-${options.groundName}`,
+      testNo: options.phaseCombinations.length + phaseIndex + 1,
+      type: 'phase-ground',
+      description: `${phase} × ${options.groundName}`,
+      phases: [phase, options.groundName],
+      readings: subReadings,
+      dai: daiValue,
+      comments: ''
+    });
+  });
+  
+  // Calcular confiança baseada na consistência
+  let confidence = profile.aiConfidence;
+  
+  // Verificar consistência dos valores
+  const phaseToPhaseValues = readings.filter(r => r.phase < options.phaseCombinations.length);
+  const phaseToGroundValues = readings.filter(r => r.phase >= options.phaseCombinations.length);
+  
+  if (phaseToPhaseValues.length < phaseToGroundValues.length) {
+    warnings.push('Valores fase/fase parecem inconsistentes com fase/massa');
+    confidence *= 0.9;
+  }
+  
+  // Criar relatório
+  const report: MultiPhaseReport = {
+    id: crypto.randomUUID(),
+    configId: config.id,
+    equipmentTag: options.equipmentTag,
+    operator: options.operator,
+    readings,
+    reports: subReports,
+    summary: {
+      phaseCount: phaseNames.length,
+      averageResistance: baseValues.reduce((a, b) => a + b) / baseValues.length,
+      status: 'Completo'
+    },
+    equipment: {
+      tag: options.equipmentTag,
+      category: config.equipmentType
+    },
+    createdAt: new Date(),
+    isSaved: false
+  };
+  
+  return {
+    report,
+    confidence,
+    warnings
+  };
+}
+
+/**
+ * Simula degradação de isolamento ao longo do tempo
+ */
+function simulateTimeDecay(baseValue: number, timeMinutes: number, decayFactor: number): number {
+  // Simular degradação exponencial
+  const decayRate = Math.log(decayFactor) / 60; // por minuto
+  return baseValue * Math.exp(decayRate * timeMinutes);
+}
+
+/**
+ * Aplica variação devido a fatores ambientais
+ */
+function applyEnvironmentalFactors(
+  value: number, 
+  temperature: number, 
+  humidity: number,
+  profile: CategoryProfile
+): number {
+  // Efeito da temperatura (coeficiente negativo - resistência diminui com calor)
+  const tempEffect = 1 + (temperature - 25) * profile.temperature.effect * -0.01;
+  
+  // Efeito da umidade (coeficiente negativo - resistência diminui com umidade)
+  const humidityEffect = 1 + (humidity - 50) * profile.humidity.effect * -0.01;
+  
+  return value * tempEffect * humidityEffect;
+}
+
+/**
+ * Gera variação aleatória realística
+ */
+function generateRandomVariation(baseValue: number, variationPercent: number = 5): number {
+  const variation = (Math.random() - 0.5) * 2 * (variationPercent / 100);
+  return baseValue * (1 + variation);
+}
+
+/**
+ * Converte tempo formatado para minutos
+ */
+function parseTime(timeString: string): number {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  return hours * 60 + minutes;
 }
 
 
