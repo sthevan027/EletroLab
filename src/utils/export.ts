@@ -39,15 +39,23 @@ export async function exportMultiPhasePDF(
   const html = generateMultiPhaseHTML(report, options);
   
   const pdfOptions = {
-    margin: [10, 10, 10, 10],
-    filename: `relatorio_multifase_${report.reports?.length || 0}_fases_${new Date().toISOString().split('T')[0]}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
+    margin: [8, 8, 8, 8],
+    filename: `relatorio_multifase_${report.equipment?.tag || 'equipamento'}_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { 
+      scale: 2, 
+      useCORS: true,
+      letterRendering: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    },
     jsPDF: { 
       unit: 'mm', 
       format: 'a4', 
-      orientation: 'portrait' 
-    }
+      orientation: 'portrait',
+      compress: true
+    },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
   
   return await html2pdf().from(html).set(pdfOptions).outputPdf('blob');
@@ -178,128 +186,320 @@ function generateCupomHTML(report: IRReport, options: ExportOptions): string {
  * Gera HTML para relatório multi-fase
  */
 function generateMultiPhaseHTML(report: MultiPhaseReport, options: ExportOptions): string {
+  const equipmentInfo = report.equipment || {};
+  const summary = report.summary || {};
+  
   const metadata = options.includeMetadata ? `
     <div class="metadata">
-      <p><strong>Total de Relatórios:</strong> ${report.reports?.length || 0}</p>
-      <p><strong>Fases/Fases:</strong> ${(report.summary as any)?.phaseToPhase || 'N/A'}</p>
-      <p><strong>Fases/Massa:</strong> ${(report.summary as any)?.phaseToGround || 'N/A'}</p>
-      ${(report.equipment as any)?.model ? `<p><strong>Modelo:</strong> ${(report.equipment as any).model}</p>` : ''}
-      ${report.equipment?.tag ? `<p><strong>Tag:</strong> ${report.equipment.tag}</p>` : ''}
+      <div class="metadata-grid">
+        <div class="metadata-item">
+          <span class="label">Equipamento:</span>
+          <span class="value">${equipmentInfo.tag || 'N/A'}</span>
+        </div>
+        <div class="metadata-item">
+          <span class="label">Operador:</span>
+          <span class="value">${report.operator || 'N/A'}</span>
+        </div>
+        <div class="metadata-item">
+          <span class="label">Total de Fases:</span>
+          <span class="value">${summary.phaseCount || 'N/A'}</span>
+        </div>
+        <div class="metadata-item">
+          <span class="label">Status:</span>
+          <span class="value status-${summary.status?.toLowerCase() || 'unknown'}">${summary.status || 'N/A'}</span>
+        </div>
+        ${equipmentInfo.model ? `
+        <div class="metadata-item">
+          <span class="label">Modelo:</span>
+          <span class="value">${equipmentInfo.model}</span>
+        </div>
+        ` : ''}
+        <div class="metadata-item">
+          <span class="label">Data/Hora:</span>
+          <span class="value">${report.createdAt.toLocaleString('pt-BR')}</span>
+        </div>
+      </div>
     </div>
   ` : '';
 
-  const reportsHTML = (report.reports || []).map(subReport => `
-    <div class="sub-report">
-      <h3>${subReport.id} - Test No: ${subReport.testNo}</h3>
-      <p><strong>Tipo:</strong> ${subReport.type === 'phase-phase' ? 'Fase/Fase' : 'Fase/Massa'}</p>
-      <p><strong>Descrição:</strong> ${subReport.description}</p>
-      
-      <table class="readings-table">
-        <thead>
-          <tr>
-            <th>Tempo</th>
-            <th>kV</th>
-            <th>Resistência</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${subReport.readings.map(reading => `
-            <tr>
-              <td>${reading.time}</td>
-              <td>${reading.kv}</td>
-              <td>${reading.resistance}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      
-      <p><strong>DAI:</strong> ${subReport.dai}</p>
-      ${options.includeComments ? `<p><strong>Comentários:</strong> ${subReport.comments}</p>` : ''}
-    </div>
-  `).join('');
+  const readingsHTML = report.readings?.map(reading => `
+    <tr>
+      <td>${reading.phase}</td>
+      <td>${reading.time}</td>
+      <td>${reading.resistance}</td>
+      ${reading.temperature ? `<td>${reading.temperature}°C</td>` : '<td>-</td>'}
+      ${reading.humidity ? `<td>${reading.humidity}%</td>` : '<td>-</td>'}
+    </tr>
+  `).join('') || '';
 
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Relatório Multi-Fase</title>
+      <title>Relatório Multi-Fase - ${equipmentInfo.tag || 'Equipamento'}</title>
       <style>
-        body {
-          font-family: Arial, sans-serif;
-          font-size: 12px;
+        * {
           margin: 0;
-          padding: 20px;
-          background: white;
+          padding: 0;
+          box-sizing: border-box;
         }
+        
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          font-size: 11px;
+          line-height: 1.4;
+          color: #333;
+          background: white;
+          padding: 15mm;
+        }
+        
         .header {
           text-align: center;
-          border-bottom: 2px solid #000;
-          padding-bottom: 10px;
+          border-bottom: 3px solid #2563eb;
+          padding-bottom: 15px;
           margin-bottom: 20px;
         }
+        
+        .logo {
+          font-size: 24px;
+          font-weight: bold;
+          color: #2563eb;
+          margin-bottom: 5px;
+        }
+        
         .title {
           font-size: 18px;
           font-weight: bold;
-          margin: 0;
+          color: #1f2937;
+          margin-bottom: 5px;
         }
+        
+        .subtitle {
+          font-size: 12px;
+          color: #6b7280;
+        }
+        
         .metadata {
-          margin-bottom: 20px;
-          padding: 10px;
-          background: #f9f9f9;
-          border-radius: 5px;
-        }
-        .metadata p {
-          margin: 5px 0;
-        }
-        .sub-report {
-          margin-bottom: 30px;
+          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
           padding: 15px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
+          margin-bottom: 20px;
         }
-        .sub-report h3 {
-          margin: 0 0 10px 0;
-          color: #333;
+        
+        .metadata-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 10px;
         }
+        
+        .metadata-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 5px 0;
+        }
+        
+        .metadata-item .label {
+          font-weight: 600;
+          color: #374151;
+        }
+        
+        .metadata-item .value {
+          font-weight: 500;
+          color: #1f2937;
+        }
+        
+        .status-ok {
+          color: #059669;
+          font-weight: bold;
+        }
+        
+        .status-warning {
+          color: #d97706;
+          font-weight: bold;
+        }
+        
+        .status-error {
+          color: #dc2626;
+          font-weight: bold;
+        }
+        
+        .summary-section {
+          background: #f1f5f9;
+          border-left: 4px solid #2563eb;
+          padding: 15px;
+          margin-bottom: 20px;
+          border-radius: 0 8px 8px 0;
+        }
+        
+        .summary-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #1e40af;
+          margin-bottom: 10px;
+        }
+        
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 10px;
+        }
+        
+        .summary-item {
+          text-align: center;
+          padding: 8px;
+          background: white;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+        }
+        
+        .summary-item .label {
+          font-size: 10px;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .summary-item .value {
+          font-size: 16px;
+          font-weight: bold;
+          color: #1f2937;
+          margin-top: 2px;
+        }
+        
+        .readings-section {
+          margin-bottom: 20px;
+        }
+        
+        .section-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #1e40af;
+          margin-bottom: 10px;
+          padding-bottom: 5px;
+          border-bottom: 2px solid #e5e7eb;
+        }
+        
         .readings-table {
           width: 100%;
           border-collapse: collapse;
-          margin: 10px 0;
+          margin-bottom: 20px;
+          background: white;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
-        .readings-table th,
+        
+        .readings-table th {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          color: white;
+          font-weight: 600;
+          text-align: center;
+          padding: 10px 8px;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
         .readings-table td {
-          border: 1px solid #ddd;
           padding: 8px;
           text-align: center;
-        }
-        .readings-table th {
-          background: #f0f0f0;
-          font-weight: bold;
-        }
-        .footer {
-          text-align: center;
-          margin-top: 20px;
-          padding-top: 10px;
-          border-top: 1px solid #ddd;
+          border-bottom: 1px solid #e5e7eb;
           font-size: 10px;
-          color: #666;
+        }
+        
+        .readings-table tr:nth-child(even) {
+          background: #f8fafc;
+        }
+        
+        .readings-table tr:hover {
+          background: #e0f2fe;
+        }
+        
+        .footer {
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 2px solid #e5e7eb;
+          text-align: center;
+          font-size: 9px;
+          color: #6b7280;
+        }
+        
+        .footer .company {
+          font-weight: bold;
+          color: #2563eb;
+          margin-bottom: 5px;
+        }
+        
+        .footer .timestamp {
+          color: #9ca3af;
+        }
+        
+        @media print {
+          body {
+            padding: 10mm;
+          }
+          
+          .readings-table {
+            page-break-inside: avoid;
+          }
         }
       </style>
     </head>
     <body>
       <div class="header">
+        <div class="logo">EletriLab</div>
         <h1 class="title">RELATÓRIO MULTI-FASE</h1>
-        <p>Data: ${report.createdAt.toLocaleDateString('pt-BR')}</p>
+        <p class="subtitle">Análise de Resistência de Isolamento - Equipamentos Multi-Fase</p>
       </div>
       
       ${metadata}
       
-      ${reportsHTML}
+      <div class="summary-section">
+        <div class="summary-title">Resumo do Teste</div>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="label">Fases Testadas</div>
+            <div class="value">${summary.phaseCount || 'N/A'}</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">Resistência Média</div>
+            <div class="value">${summary.averageResistance ? `${summary.averageResistance} MΩ` : 'N/A'}</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">Status Geral</div>
+            <div class="value status-${summary.status?.toLowerCase() || 'unknown'}">${summary.status || 'N/A'}</div>
+          </div>
+          <div class="summary-item">
+            <div class="label">Confiança IA</div>
+            <div class="value">${Math.round((report as any).confidence * 100 || 85)}%</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="readings-section">
+        <div class="section-title">Leituras de Resistência</div>
+        <table class="readings-table">
+          <thead>
+            <tr>
+              <th>Fase</th>
+              <th>Tempo</th>
+              <th>Resistência</th>
+              <th>Temp.</th>
+              <th>Umid.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${readingsHTML}
+          </tbody>
+        </table>
+      </div>
       
       <div class="footer">
-        <p>Gerado por EletriLab Ultra-MVP com IA</p>
-        <p>${new Date().toLocaleString('pt-BR')}</p>
+        <div class="company">EletriLab Ultra-MVP</div>
+        <div class="timestamp">Gerado em ${new Date().toLocaleString('pt-BR')} | Powered by AI</div>
       </div>
     </body>
     </html>

@@ -11,7 +11,11 @@ import {
   DocumentArrowDownIcon,
   ChartBarIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  SparklesIcon,
+  InformationCircleIcon,
+  XMarkIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { Category, MultiPhaseConfig, MultiPhaseReport, CategoryProfile } from '../types';
 import { dbUtils } from '../db/database';
@@ -36,6 +40,7 @@ const MultiPhase: React.FC = () => {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showNotification, setShowNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
   // Configuração da fase
   const [equipmentType, setEquipmentType] = useState<Category>('motor');
@@ -66,6 +71,16 @@ const MultiPhase: React.FC = () => {
     loadDefaultValues();
   }, []);
 
+  // Auto-hide notification
+  useEffect(() => {
+    if (showNotification) {
+      const timer = setTimeout(() => {
+        setShowNotification(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showNotification]);
+
   const loadCategoryProfiles = async () => {
     try {
       const profiles = await dbUtils.getCategoryProfiles();
@@ -84,6 +99,10 @@ const MultiPhase: React.FC = () => {
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
     }
+  };
+
+  const showNotificationMessage = (type: 'success' | 'error', message: string) => {
+    setShowNotification({ type, message });
   };
 
   const addPhase = () => {
@@ -236,10 +255,10 @@ const MultiPhase: React.FC = () => {
       await dbUtils.saveMultiPhaseReport(reportToSave);
       setGeneratedReport(reportToSave);
       
-      alert('Relatório multi-fase salvo com sucesso!');
+      showNotificationMessage('success', 'Relatório multi-fase salvo com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar relatório:', error);
-      alert('Erro ao salvar relatório');
+      showNotificationMessage('error', 'Erro ao salvar relatório');
     } finally {
       setSaving(false);
     }
@@ -263,7 +282,7 @@ const MultiPhase: React.FC = () => {
       
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
-      alert('Erro ao exportar relatório');
+      showNotificationMessage('error', 'Erro ao exportar relatório');
     } finally {
       setExporting(false);
     }
@@ -284,45 +303,85 @@ const MultiPhase: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <button
-            onClick={() => navigate('/')}
-            className="mr-4 p-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeftIcon className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold text-white">
-              Gerador Multi-Fase
-            </h1>
-            <p className="text-gray-400 mt-1">
-              Relatórios IR para equipamentos multi-fase com IA
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+      {/* Notification */}
+      {showNotification && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right">
+          <div className={`flex items-center p-4 rounded-lg shadow-lg ${
+            showNotification.type === 'success' 
+              ? 'bg-green-50 border border-green-200 text-green-800' 
+              : 'bg-red-50 border border-red-200 text-red-800'
+          }`}>
+            {showNotification.type === 'success' ? (
+              <CheckCircleIcon className="w-5 h-5 mr-2" />
+            ) : (
+              <ExclamationTriangleIcon className="w-5 h-5 mr-2" />
+            )}
+            <span className="font-medium">{showNotification.message}</span>
+            <button
+              onClick={() => setShowNotification(null)}
+              className="ml-4 text-gray-400 hover:text-gray-600"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
-        <div className="flex items-center space-x-2 text-green-400">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium">IA Ativa</span>
+      )}
+
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-6">
+            <div className="flex items-center">
+              <button
+                onClick={() => navigate('/')}
+                className="mr-4 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+              >
+                <ArrowLeftIcon className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Gerador Multi-Fase
+                </h1>
+                <p className="text-gray-600 mt-1 flex items-center">
+                  <SparklesIcon className="w-4 h-4 mr-1 text-purple-500" />
+                  Relatórios IR para equipamentos multi-fase com IA
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center text-sm text-gray-500 bg-purple-50 px-3 py-2 rounded-full">
+                <CpuChipIcon className="w-4 h-4 mr-2 text-purple-500" />
+                <span className="font-medium">IA Ativa</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Formulário de Configuração */}
-        <div className="space-y-6">
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <CogIcon className="w-5 h-5 mr-2 text-blue-400" />
-              Configuração do Equipamento
-            </h2>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {/* Formulário de Configuração */}
+          <div className="space-y-8">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+              <div className="flex items-center mb-8">
+                <div className="p-3 bg-purple-100 rounded-xl mr-4">
+                  <CogIcon className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Configuração do Equipamento</h2>
+                  <p className="text-gray-600">Configure os parâmetros do teste multi-fase</p>
+                </div>
+              </div>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="label">Tipo de Equipamento</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                  <BoltIcon className="w-4 h-4 mr-2 text-purple-500" />
+                  Tipo de Equipamento
+                </label>
                 <select
-                  className="input"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                   value={equipmentType}
                   onChange={(e) => setEquipmentType(e.target.value as Category)}
                 >
@@ -334,37 +393,48 @@ const MultiPhase: React.FC = () => {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="label">Tensão (kV)</label>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                    <BoltIcon className="w-4 h-4 mr-2 text-purple-500" />
+                    Tensão (kV)
+                  </label>
                   <input
                     type="number"
-                    className="input"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                     value={voltage}
                     onChange={(e) => setVoltage(Number(e.target.value))}
                     step="0.1"
                     min="0.1"
                     max="50"
+                    placeholder="1.0"
                   />
                 </div>
                 <div>
-                  <label className="label">Duração (min)</label>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                    <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                    Duração (min)
+                  </label>
                   <input
                     type="number"
-                    className="input"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                     value={duration}
                     onChange={(e) => setDuration(Number(e.target.value))}
                     min="60"
                     max="600"
+                    placeholder="60"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="label">Tag do Equipamento</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                  Tag do Equipamento
+                </label>
                 <input
                   type="text"
-                  className="input"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                   placeholder="Ex: MOTOR-01, TRAFO-02"
                   value={equipmentTag}
                   onChange={(e) => setEquipmentTag(e.target.value)}
@@ -372,10 +442,14 @@ const MultiPhase: React.FC = () => {
               </div>
 
               <div>
-                <label className="label">Operador</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                  Operador Responsável
+                </label>
                 <input
                   type="text"
-                  className="input"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                  placeholder="Nome do operador responsável"
                   value={operator}
                   onChange={(e) => setOperator(e.target.value)}
                 />
@@ -384,32 +458,40 @@ const MultiPhase: React.FC = () => {
           </div>
 
           {/* Configuração das Fases */}
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <ChartBarIcon className="w-5 h-5 mr-2 text-purple-400" />
-              Configuração das Fases
-            </h2>
-
-            <div className="space-y-4">
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+            <div className="flex items-center mb-8">
+              <div className="p-3 bg-indigo-100 rounded-xl mr-4">
+                <ChartBarIcon className="w-6 h-6 text-indigo-600" />
+              </div>
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="label">Fases do Sistema</label>
+                <h2 className="text-2xl font-bold text-gray-900">Configuração das Fases</h2>
+                <p className="text-gray-600">Configure as fases e combinações do sistema</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-semibold text-gray-800 flex items-center">
+                    <BoltIcon className="w-4 h-4 mr-2 text-indigo-500" />
+                    Fases do Sistema
+                  </label>
                   <button
                     type="button"
                     onClick={addPhase}
-                    className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium bg-indigo-50 px-3 py-2 rounded-lg hover:bg-indigo-100 transition-colors"
                   >
                     <PlusIcon className="w-4 h-4 inline mr-1" />
                     Adicionar Fase
                   </button>
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {phaseNames.map((phase, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={index} className="flex items-center gap-3">
                       <input
                         type="text"
-                        className="input flex-1"
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         value={phase}
                         onChange={(e) => updatePhaseName(index, e.target.value)}
                         placeholder={`Fase ${index + 1}`}
@@ -418,9 +500,9 @@ const MultiPhase: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => removePhase(index)}
-                          className="p-2 text-red-400 hover:text-red-300"
+                          className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
                         >
-                          <TrashIcon className="w-4 h-4" />
+                          <TrashIcon className="w-5 h-5" />
                         </button>
                       )}
                     </div>
@@ -429,10 +511,13 @@ const MultiPhase: React.FC = () => {
               </div>
 
               <div>
-                <label className="label">Nome da Massa/Terra</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                  Nome da Massa/Terra
+                </label>
                 <input
                   type="text"
-                  className="input"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                   value={groundName}
                   onChange={(e) => setGroundName(e.target.value)}
                   placeholder="Terra, PE, Massa"
@@ -440,23 +525,26 @@ const MultiPhase: React.FC = () => {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="label">Combinações Fase/Fase</label>
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-semibold text-gray-800 flex items-center">
+                    <BoltIcon className="w-4 h-4 mr-2 text-indigo-500" />
+                    Combinações Fase/Fase
+                  </label>
                   <button
                     type="button"
                     onClick={addCombination}
-                    className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium bg-indigo-50 px-3 py-2 rounded-lg hover:bg-indigo-100 transition-colors"
                   >
                     <PlusIcon className="w-4 h-4 inline mr-1" />
                     Adicionar Combinação
                   </button>
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {phaseCombinations.map((combo, comboIndex) => (
-                    <div key={comboIndex} className="flex items-center gap-2">
+                    <div key={comboIndex} className="flex items-center gap-3">
                       <select
-                        className="input flex-1"
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         value={combo[0]}
                         onChange={(e) => updateCombination(comboIndex, 0, e.target.value)}
                       >
@@ -464,9 +552,9 @@ const MultiPhase: React.FC = () => {
                           <option key={phase} value={phase}>{phase}</option>
                         ))}
                       </select>
-                      <span className="text-gray-400 font-medium">×</span>
+                      <span className="text-gray-500 font-bold text-lg">×</span>
                       <select
-                        className="input flex-1"
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         value={combo[1]}
                         onChange={(e) => updateCombination(comboIndex, 1, e.target.value)}
                       >
@@ -477,9 +565,9 @@ const MultiPhase: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => removeCombination(comboIndex)}
-                        className="p-2 text-red-400 hover:text-red-300"
+                        className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
                       >
-                        <TrashIcon className="w-4 h-4" />
+                        <TrashIcon className="w-5 h-5" />
                       </button>
                     </div>
                   ))}
@@ -490,16 +578,19 @@ const MultiPhase: React.FC = () => {
 
           {/* Erros de Validação */}
           {validationErrors.length > 0 && (
-            <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
               <div className="flex items-start">
-                <ExclamationTriangleIcon className="w-5 h-5 text-red-400 mt-0.5 mr-2" />
+                <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mt-0.5 mr-3" />
                 <div>
-                  <h3 className="text-sm font-medium text-red-400">
+                  <h3 className="text-lg font-semibold text-red-800 mb-2">
                     Erros de Validação
                   </h3>
-                  <ul className="mt-1 text-sm text-red-300 list-disc list-inside">
+                  <ul className="space-y-1 text-sm text-red-700">
                     {validationErrors.map((error, index) => (
-                      <li key={index}>{error}</li>
+                      <li key={index} className="flex items-center">
+                        <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                        {error}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -511,16 +602,16 @@ const MultiPhase: React.FC = () => {
           <button
             onClick={generateReport}
             disabled={generating}
-            className="w-full btn-primary py-3 text-base font-semibold"
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 px-6 rounded-xl hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
           >
             {generating ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
                 Gerando com IA...
               </>
             ) : (
               <>
-                <BoltIcon className="w-5 h-5 mr-2" />
+                <SparklesIcon className="w-6 h-6 mr-3" />
                 Gerar Relatório Multi-Fase
               </>
             )}
@@ -528,88 +619,107 @@ const MultiPhase: React.FC = () => {
         </div>
 
         {/* Resultado */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {generatedReport ? (
             <>
               {/* Cabeçalho do Resultado */}
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-white flex items-center">
-                    <CheckCircleIcon className="w-5 h-5 mr-2 text-green-400" />
-                    Relatório Gerado
-                  </h2>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-400">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <div className="p-3 bg-green-100 rounded-xl mr-4">
+                      <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Relatório Gerado</h2>
+                      <p className="text-gray-600">Relatório multi-fase criado com sucesso</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-sm font-semibold text-gray-700">
                       Confiança IA: {(aiConfidence * 100).toFixed(0)}%
                     </span>
-                    <div className="w-16 bg-gray-700 rounded-full h-2">
+                    <div className="w-20 bg-gray-200 rounded-full h-3">
                       <div 
-                        className="bg-green-400 h-2 rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${aiConfidence * 100}%` }}
                       ></div>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-400">Equipamento:</span>
-                    <p className="font-medium text-white">{generatedReport.equipmentTag}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-center">
+                    <span className="font-semibold text-gray-700 w-24">Equipamento:</span>
+                    <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                      {generatedReport.equipmentTag}
+                    </span>
                   </div>
-                  <div>
-                    <span className="text-gray-400">Operador:</span>
-                    <p className="font-medium text-white">{generatedReport.operator}</p>
+                  <div className="flex items-center">
+                    <span className="font-semibold text-gray-700 w-24">Operador:</span>
+                    <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                      {generatedReport.operator}
+                    </span>
                   </div>
-                  <div>
-                    <span className="text-gray-400">Fases:</span>
-                    <p className="font-medium text-white">{phaseNames.join(', ')}</p>
+                  <div className="flex items-center">
+                    <span className="font-semibold text-gray-700 w-24">Fases:</span>
+                    <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                      {phaseNames.join(', ')}
+                    </span>
                   </div>
-                  <div>
-                    <span className="text-gray-400">Data/Hora:</span>
-                    <p className="font-medium text-white">
+                  <div className="flex items-center">
+                    <span className="font-semibold text-gray-700 w-24">Data/Hora:</span>
+                    <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
                       {generatedReport.createdAt.toLocaleString('pt-BR')}
-                    </p>
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Resumo dos Testes */}
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                <h3 className="text-md font-semibold text-white mb-4">
-                  Resumo dos Testes
-                </h3>
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+                <div className="flex items-center mb-6">
+                  <div className="p-3 bg-blue-100 rounded-xl mr-4">
+                    <DocumentTextIcon className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Resumo dos Testes</h3>
+                    <p className="text-gray-600">Testes realizados no equipamento</p>
+                  </div>
+                </div>
                 
-                <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-400 border-b border-gray-700 pb-2">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4 text-sm font-semibold text-gray-700 border-b-2 border-gray-200 pb-3">
                     <span>Teste</span>
                     <span>Leituras</span>
                     <span>Status</span>
                   </div>
                   
                   {phaseCombinations.map((combo, index) => (
-                    <div key={index} className="grid grid-cols-3 gap-4 text-sm">
-                      <span className="font-medium text-white">
+                    <div key={index} className="grid grid-cols-3 gap-4 text-sm py-3 border-b border-gray-100">
+                      <span className="font-semibold text-gray-900">
                         {combo[0]} × {combo[1]}
                       </span>
-                      <span className="text-gray-400">
+                      <span className="text-gray-600">
                         {generatedReport.readings?.filter(r => r.phase === index).length || 4} leituras
                       </span>
-                      <span className="text-green-400 font-medium">
-                        ✓ Completo
+                      <span className="text-green-600 font-semibold flex items-center">
+                        <CheckCircleIcon className="w-4 h-4 mr-1" />
+                        Completo
                       </span>
                     </div>
                   ))}
                   
                   {phaseNames.map((phase, index) => (
-                    <div key={`ground-${index}`} className="grid grid-cols-3 gap-4 text-sm">
-                      <span className="font-medium text-white">
+                    <div key={`ground-${index}`} className="grid grid-cols-3 gap-4 text-sm py-3 border-b border-gray-100">
+                      <span className="font-semibold text-gray-900">
                         {phase} × {groundName}
                       </span>
-                      <span className="text-gray-400">
+                      <span className="text-gray-600">
                         4 leituras
                       </span>
-                      <span className="text-green-400 font-medium">
-                        ✓ Completo
+                      <span className="text-green-600 font-semibold flex items-center">
+                        <CheckCircleIcon className="w-4 h-4 mr-1" />
+                        Completo
                       </span>
                     </div>
                   ))}
@@ -617,12 +727,16 @@ const MultiPhase: React.FC = () => {
               </div>
 
               {/* Ações */}
-              <div className="flex flex-col space-y-3">
+              <div className="flex flex-col sm:flex-row gap-4">
                 {!generatedReport.isSaved && (
                   <button
                     onClick={saveReport}
                     disabled={saving}
-                    className="btn-success py-3"
+                    className={`flex-1 py-3 px-6 rounded-xl focus:outline-none focus:ring-4 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02] ${
+                      generatedReport.isSaved 
+                        ? 'bg-green-100 text-green-700 border-2 border-green-300' 
+                        : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 focus:ring-green-300'
+                    }`}
                   >
                     {saving ? (
                       <>
@@ -632,7 +746,7 @@ const MultiPhase: React.FC = () => {
                     ) : (
                       <>
                         <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
-                        Salvar Relatório
+                        Salvar no Banco
                       </>
                     )}
                   </button>
@@ -641,7 +755,7 @@ const MultiPhase: React.FC = () => {
                 <button
                   onClick={exportToPDF}
                   disabled={exporting}
-                  className="btn-primary py-3"
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-xl hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
                 >
                   {exporting ? (
                     <>
@@ -658,28 +772,42 @@ const MultiPhase: React.FC = () => {
 
                 <button
                   onClick={resetForm}
-                  className="btn-secondary py-3"
+                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-300 focus:ring-offset-2 flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
                 >
                   <PlusIcon className="w-5 h-5 mr-2" />
-                  Gerar Novo Relatório
+                  Gerar Novo
                 </button>
               </div>
             </>
           ) : (
-            <div className="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
-              <ChartBarIcon className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-12 text-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ChartBarIcon className="w-12 h-12 text-purple-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-700 mb-4">
                 Relatório Multi-Fase
               </h3>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
                 Configure as fases e combinações do seu equipamento e gere um relatório completo com IA
               </p>
-              <ul className="text-sm text-gray-500 space-y-1">
-                <li>• Testes fase × fase automatizados</li>
-                <li>• Testes fase × massa correlacionados</li>
-                <li>• Análise de consistência com IA</li>
-                <li>• Exportação profissional em PDF</li>
-              </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 max-w-lg mx-auto">
+                <div className="flex items-center">
+                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                  Testes fase × fase automatizados
+                </div>
+                <div className="flex items-center">
+                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                  Testes fase × massa correlacionados
+                </div>
+                <div className="flex items-center">
+                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                  Análise de consistência com IA
+                </div>
+                <div className="flex items-center">
+                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                  Exportação profissional em PDF
+                </div>
+              </div>
             </div>
           )}
         </div>
