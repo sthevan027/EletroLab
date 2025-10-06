@@ -1,10 +1,12 @@
 /**
  * Gerador de séries IR para relatórios Megger
+ * Versão 2.0 com IA Avançada
  */
 
 import { Category, CategoryProfile, IRReport, MultiPhaseConfig, MultiPhaseReport } from '../types';
 import { formatResistance, formatVoltage, getStandardTimeSeries, calculateDAI, parseResistance } from './units';
 import { dbUtils } from '../db/database';
+import { aiEngine, AIGenerationContext, AIGenerationResult } from './ai-engine';
 
 /**
  * Opções para geração de série IR
@@ -31,6 +33,10 @@ export interface IRGenerationResult {
     resistance: string;
   }[];
   dai: string;
+  confidence?: number;
+  insights?: any[];
+  warnings?: string[];
+  recommendations?: string[];
 }
 
 /**
@@ -41,7 +47,7 @@ export async function generateIRSeries(opts: IRGenerationOptions): Promise<IRGen
 }
 
 /**
- * Gera uma série IR baseada na categoria e configurações
+ * Gera uma série IR baseada na categoria e configurações usando IA Avançada
  */
 export async function gerarSerieIR(opts: IRGenerationOptions): Promise<IRGenerationResult> {
   const {
@@ -56,16 +62,49 @@ export async function gerarSerieIR(opts: IRGenerationOptions): Promise<IRGenerat
     model
   } = opts;
 
-  // Buscar perfil da categoria
-  const profile = await dbUtils.getCategoryProfile(category);
+  // Buscar histórico de aprendizado
+  const historicalData = await dbUtils.getAILearningHistory(category);
   
-  // Gerar valores baseados no perfil
-  const readings = generateReadingsFromProfile(profile || getDefaultProfile(category), kv, limitTOhm);
+  // Criar contexto para IA
+  const context: AIGenerationContext = {
+    category,
+    historicalData: historicalData.map(h => h.output ? JSON.parse(h.output).readings?.map((r: any) => parseResistance(r.resistance) || 0) : []).filter(arr => arr.length > 0),
+    environmentalFactors: {
+      temperature: 20 + Math.random() * 15, // 20-35°C
+      humidity: 45 + Math.random() * 25,    // 45-70%
+      pressure: 1013 + (Math.random() - 0.5) * 20 // 1003-1023 hPa
+    },
+    equipmentAge: Math.floor(Math.random() * 15), // 0-15 anos
+    maintenanceHistory: [],
+    manufacturer,
+    model
+  };
+
+  // Usar IA avançada para gerar relatório
+  const aiResult = await aiEngine.generateIRReport(context);
   
   // Calcular DAI
-  const dai = calculateDAI(readings);
+  const dai = calculateDAI(aiResult.readings);
   
-  return { readings, dai };
+  // Registrar aprendizado
+  await dbUtils.recordAILearning({
+    id: Date.now(),
+    category,
+    phaseCount: 1,
+    phaseNames: ['single'],
+    input: JSON.stringify(context),
+    output: JSON.stringify(aiResult),
+    createdAt: new Date().toISOString()
+  });
+  
+  return { 
+    readings: aiResult.readings, 
+    dai,
+    confidence: aiResult.confidence,
+    insights: aiResult.insights,
+    warnings: aiResult.warnings,
+    recommendations: aiResult.recommendations
+  };
 }
 
 /**
@@ -368,7 +407,7 @@ function generateReadingsFromHistory(
 }
 
 /**
- * Gera relatório multi-fase com IA
+ * Gera relatório multi-fase com IA Avançada
  */
 export async function generateMultiPhaseReport(
   config: MultiPhaseConfig,
@@ -382,18 +421,37 @@ export async function generateMultiPhaseReport(
   report: MultiPhaseReport;
   confidence: number;
   warnings: string[];
+  insights?: any[];
+  recommendations?: string[];
 }> {
   const warnings: string[] = [];
   const phaseNames = config.phases.names;
   
-  // Buscar perfil da categoria
-  const profile = await dbUtils.getCategoryProfile(config.equipmentType) || getDefaultProfile(config.equipmentType);
+  // Buscar histórico de aprendizado
+  const historicalData = await dbUtils.getAILearningHistory(config.equipmentType);
   
-  // Gerar valores base para cada fase
+  // Criar contexto para IA
+  const context: AIGenerationContext = {
+    category: config.equipmentType,
+    historicalData: historicalData.map(h => h.output ? JSON.parse(h.output).readings?.map((r: any) => parseResistance(r.resistance) || 0) : []).filter(arr => arr.length > 0),
+    environmentalFactors: {
+      temperature: 20 + Math.random() * 15, // 20-35°C
+      humidity: 45 + Math.random() * 25,    // 45-70%
+      pressure: 1013 + (Math.random() - 0.5) * 20 // 1003-1023 hPa
+    },
+    equipmentAge: Math.floor(Math.random() * 15), // 0-15 anos
+    maintenanceHistory: [],
+    manufacturer: undefined,
+    model: undefined
+  };
+
+  // Usar IA avançada para gerar valores base
+  const aiResult = await aiEngine.generateIRReport(context);
+  
+  // Gerar valores base para cada fase usando IA
   const baseValues = phaseNames.map(() => {
-    const min = profile.baseResistance.min;
-    const max = profile.baseResistance.max;
-    return min + Math.random() * (max - min);
+    const aiValues = aiResult.readings.map(r => parseResistance(r.resistance) || 0);
+    return aiValues[Math.floor(Math.random() * aiValues.length)];
   });
   
   // Gerar leituras para cada combinação e montar sub-relatórios
@@ -408,27 +466,31 @@ export async function generateMultiPhaseReport(
   
   const times = getStandardTimeSeries();
   
+  // Buscar perfil uma vez
+  const profile = await dbUtils.getCategoryProfile(config.equipmentType) || getDefaultProfile(config.equipmentType);
+
   // Testes fase × fase
   options.phaseCombinations.forEach((combo, comboIndex) => {
     const phase1Index = phaseNames.indexOf(combo[0]);
     const phase2Index = phaseNames.indexOf(combo[1]);
     
     if (phase1Index !== -1 && phase2Index !== -1) {
-      // Valor correlacionado entre as duas fases
+      // Valor correlacionado entre as duas fases usando IA
       const baseValue = (baseValues[phase1Index] + baseValues[phase2Index]) / 2;
       const subReadings: { time: string; kv: string; resistance: string }[] = [];
       
       times.forEach(time => {
         const timeMinutes = parseTime(time);
-        let value = simulateTimeDecay(baseValue, timeMinutes, profile.baseResistance.decay);
+        let value = simulateTimeDecay(baseValue, timeMinutes, 0.95);
         
-        // Aplicar fatores ambientais
-        const temperature = 20 + Math.random() * 10;
-        const humidity = 50 + Math.random() * 20;
+        // Aplicar fatores ambientais usando IA
+        const temperature = context.environmentalFactors.temperature;
+        const humidity = context.environmentalFactors.humidity;
         value = applyEnvironmentalFactors(value, temperature, humidity, profile);
         
-        // Variação aleatória
-        value = generateRandomVariation(value, 3);
+        // Variação baseada na confiança da IA
+        const variation = 1 + (Math.random() - 0.5) * (1 - aiResult.confidence) * 0.2;
+        value *= variation;
         
         readings.push({
           phase: comboIndex,
@@ -464,15 +526,16 @@ export async function generateMultiPhaseReport(
     
     times.forEach(time => {
       const timeMinutes = parseTime(time);
-      let value = simulateTimeDecay(baseValue, timeMinutes, profile.baseResistance.decay);
+      let value = simulateTimeDecay(baseValue, timeMinutes, 0.95);
       
-      // Aplicar fatores ambientais
-      const temperature = 20 + Math.random() * 10;
-      const humidity = 50 + Math.random() * 20;
+      // Aplicar fatores ambientais usando IA
+      const temperature = context.environmentalFactors.temperature;
+      const humidity = context.environmentalFactors.humidity;
       value = applyEnvironmentalFactors(value, temperature, humidity, profile);
       
-      // Variação aleatória
-      value = generateRandomVariation(value, 5);
+      // Variação baseada na confiança da IA
+      const variation = 1 + (Math.random() - 0.5) * (1 - aiResult.confidence) * 0.3;
+      value *= variation;
       
       readings.push({
         phase: phaseNames.length + phaseIndex, // Offset para fase/massa
@@ -499,8 +562,8 @@ export async function generateMultiPhaseReport(
     });
   });
   
-  // Calcular confiança baseada na consistência
-  let confidence = profile.aiConfidence;
+  // Calcular confiança baseada na IA
+  let confidence = aiResult.confidence;
   
   // Verificar consistência dos valores
   const phaseToPhaseValues = readings.filter(r => r.phase < options.phaseCombinations.length);
@@ -510,6 +573,9 @@ export async function generateMultiPhaseReport(
     warnings.push('Valores fase/fase parecem inconsistentes com fase/massa');
     confidence *= 0.9;
   }
+  
+  // Adicionar warnings da IA
+  warnings.push(...aiResult.warnings);
   
   // Criar relatório
   const report: MultiPhaseReport = {
@@ -532,10 +598,28 @@ export async function generateMultiPhaseReport(
     isSaved: false
   };
   
+  // Registrar aprendizado
+  await dbUtils.recordAILearning({
+    id: Date.now(),
+    category: config.equipmentType,
+    phaseCount: phaseNames.length,
+    phaseNames,
+    input: JSON.stringify({
+      equipmentType: config.equipmentType,
+      voltage: config.voltage,
+      phaseNames,
+      combinations: options.phaseCombinations
+    }),
+    output: JSON.stringify({ report, confidence, warnings }),
+    createdAt: new Date().toISOString()
+  });
+  
   return {
     report,
     confidence,
-    warnings
+    warnings,
+    insights: aiResult.insights,
+    recommendations: aiResult.recommendations
   };
 }
 

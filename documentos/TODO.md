@@ -4,8 +4,8 @@
 
 ### Interface e Design
 - [x] Melhorar contraste do texto (já implementado)
-- [ ] Implementar tema escuro/cinza
-- [ ] Adicionar "Gerar Multi-Fase" na barra lateral
+- [x] Implementar tema escuro/cinza (todas as páginas principais)
+- [x] Adicionar "Gerar Multi-Fase" na barra lateral
 - [ ] Criar página de visualização de relatórios
 - [ ] Adicionar botão para abrir relatórios gerados
 - [ ] Melhorar design geral do site
@@ -18,6 +18,7 @@
 - [ ] Histórico completo de relatórios
 - [ ] Filtros por tipo de relatório (IR, Multi-Fase)
 - [ ] Busca por equipamento ou data
+- [ ] Exibir insights da IA no Preview (novo)
 
 ### Sincronização e Nuvem
 - [x] Configuração básica do Firebase
@@ -29,13 +30,14 @@
 
 ### IA e Automação
 - [x] Sistema de aprendizado de IA
-- [ ] Melhorar algoritmos de geração
-- [ ] Sugestões automáticas baseadas em histórico
-- [ ] Análise de tendências nos dados
+- [x] Melhorar algoritmos de geração (motor IA avançado, clustering, regressão, anomalias)
+- [x] Sugestões automáticas baseadas em histórico (recomendações do motor IA)
+- [x] Análise de tendências nos dados (regressão linear com R²)
+- [ ] Integrar componente AIInsights nas telas (GenerateReport/MultiPhase)
 
 ### Parâmetros e Configuração
 - [ ] Interface para configurar Firebase
-- [ ] Perfis de equipamento personalizáveis
+- [x] Perfis de equipamento personalizáveis (CRUD de perfis por categoria)
 - [ ] Configurações de exportação
 - [ ] Preferências de usuário
 
@@ -58,6 +60,7 @@
 - [ ] PWA (Progressive Web App)
 - [ ] Notificações push
 - [ ] Atalhos de teclado
+- [ ] Code-splitting para reduzir bundle (novo)
 
 ### Segurança
 - [ ] Autenticação de usuários

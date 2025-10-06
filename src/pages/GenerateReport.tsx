@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeftIcon, 
@@ -18,6 +18,9 @@ import {
 import { Category, IRReport, IRGenerationOptions, IRGenerationResult } from '../types';
 import { generateIRSeries } from '../utils/generator';
 import { validateIRReport } from '../utils/validation';
+
+// Lazy load heavy components
+const AIInsights = lazy(() => import('../components/AIInsights'));
 import { exportCupomPDF } from '../utils/export';
 import { dbUtils } from '../db/database';
 
@@ -249,7 +252,7 @@ const GenerateReport: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gray-900">
       {/* Notification */}
       {showNotification && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right">
@@ -275,29 +278,33 @@ const GenerateReport: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50">
+      <div className="pt-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center">
+          <div className="bg-gray-800/70 border border-gray-700 rounded-2xl shadow-xl px-5 sm:px-8 py-6 flex items-center justify-between">
+            <div className="flex items-start">
               <button
                 onClick={() => navigate('/')}
-                className="mr-4 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+                className="mr-4 mt-1 p-2 text-gray-400 hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-700"
+                aria-label="Voltar"
               >
                 <ArrowLeftIcon className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
                   Gerar Relatório Rápido
                 </h1>
-                <p className="text-gray-600 mt-1 flex items-center">
-                  <SparklesIcon className="w-4 h-4 mr-1 text-blue-500" />
+                <p className="text-gray-400 mt-1 flex items-center">
+                  <SparklesIcon className="w-4 h-4 mr-1 text-blue-400" />
                   Geração instantânea com IA
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-gray-500 bg-blue-50 px-3 py-2 rounded-full">
-                <CpuChipIcon className="w-4 h-4 mr-2 text-blue-500" />
+            <div className="flex items-center">
+              <div className="flex items-center text-sm text-gray-200 bg-blue-500/15 px-4 py-2 rounded-full border border-blue-500/30 shadow-inner">
+                <span className="relative mr-2 block w-2 h-2 rounded-full bg-blue-400">
+                  <span className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-60"></span>
+                </span>
+                <CpuChipIcon className="w-4 h-4 mr-1 text-blue-400" />
                 <span className="font-medium">IA Ativa</span>
               </div>
             </div>
@@ -308,31 +315,31 @@ const GenerateReport: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Formulário */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-            <div className="flex items-center mb-8">
-              <div className="p-3 bg-blue-100 rounded-xl mr-4">
-                <CogIcon className="w-6 h-6 text-blue-600" />
+            <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-8">
+              <div className="flex items-center mb-8">
+                <div className="p-3 bg-blue-500/20 rounded-xl mr-4">
+                  <CogIcon className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Configurações</h2>
+                  <p className="text-gray-400">Configure os parâmetros do teste</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Configurações</h2>
-                <p className="text-gray-600">Configure os parâmetros do teste</p>
-              </div>
-            </div>
 
             {/* Categoria */}
             <div className="mb-8">
-              <label className="block text-sm font-semibold text-gray-800 mb-4 flex items-center">
-                <BoltIcon className="w-4 h-4 mr-2 text-blue-500" />
+              <label className="flex text-sm font-semibold text-gray-200 mb-4 items-center">
+                <BoltIcon className="w-4 h-4 mr-2 text-blue-400" />
                 Categoria do Equipamento *
               </label>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {categories.map((cat) => (
                   <label
                     key={cat.value}
-                    className={`group flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                    className={`group relative flex flex-col justify-center text-center aspect-square p-4 border-2 rounded-2xl cursor-pointer transition-all duration-200 ${
                       formData.category === cat.value
-                        ? 'border-blue-500 bg-blue-50 shadow-lg scale-[1.02]'
-                        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md'
+                        ? 'border-blue-500 bg-blue-500/20 shadow-lg scale-[1.02]'
+                        : 'border-gray-600 bg-gray-800 hover:border-blue-400 hover:bg-gray-700 hover:shadow-md'
                     }`}
                   >
                     <input
@@ -343,16 +350,16 @@ const GenerateReport: React.FC = () => {
                       onChange={(e) => handleInputChange('category', e.target.value as Category)}
                       className="sr-only"
                     />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900 group-hover:text-blue-700">
+                    <div className="mt-2">
+                      <div className="font-semibold text-white group-hover:text-blue-300">
                         {cat.label}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-200 mt-1 group-hover:text-blue-300">
                         {cat.description}
                       </div>
                     </div>
                     {formData.category === cat.value && (
-                      <div className="p-2 bg-blue-500 rounded-full">
+                      <div className="absolute top-3 right-3 p-2 bg-blue-500 rounded-full">
                         <CheckCircleIcon className="w-5 h-5 text-white" />
                       </div>
                     )}
@@ -363,8 +370,8 @@ const GenerateReport: React.FC = () => {
 
             {/* Tensão */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                <BoltIcon className="w-4 h-4 mr-2 text-blue-500" />
+              <label className="flex text-sm font-semibold text-gray-200 mb-3 items-center">
+                <BoltIcon className="w-4 h-4 mr-2 text-blue-400" />
                 Tensão Aplicada (kV)
               </label>
               <div className="relative">
@@ -382,10 +389,10 @@ const GenerateReport: React.FC = () => {
                       setFieldErrors(prev => ({ ...prev, kv: error }));
                     }
                   }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                  className={`w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                     fieldErrors.kv 
-                      ? 'border-red-300 bg-red-50' 
-                      : 'border-gray-200 focus:border-blue-500'
+                      ? 'border-red-400 bg-red-500/10' 
+                      : 'border-gray-600 focus:border-blue-500'
                   }`}
                   placeholder="1.00"
                 />
@@ -400,10 +407,10 @@ const GenerateReport: React.FC = () => {
 
             {/* Tag */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+              <label className="flex text-sm font-semibold text-white mb-3 items-center">
+                <InformationCircleIcon className="w-4 h-4 mr-2 text-blue-400" />
                 Tag do Equipamento
-                <span className="text-gray-500 font-normal ml-1">(Opcional)</span>
+                <span className="text-gray-400 font-normal ml-1">(Opcional)</span>
               </label>
               <div className="relative">
                 <input
@@ -417,10 +424,10 @@ const GenerateReport: React.FC = () => {
                     }
                   }}
                   placeholder="Ex: MOTOR-01, TRAFO-02"
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                  className={`w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                     fieldErrors.tag 
-                      ? 'border-red-300 bg-red-50' 
-                      : 'border-gray-200 focus:border-blue-500'
+                      ? 'border-red-400 bg-red-500/10' 
+                      : 'border-gray-600 focus:border-blue-500'
                   }`}
                 />
                 {fieldErrors.tag && (
@@ -435,7 +442,7 @@ const GenerateReport: React.FC = () => {
             {/* Campos opcionais */}
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3">
+                <label className="block text-sm font-semibold text-white mb-3">
                   Cliente
                 </label>
                 <input
@@ -448,12 +455,12 @@ const GenerateReport: React.FC = () => {
                       setFieldErrors(prev => ({ ...prev, client: error }));
                     }
                   }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                    fieldErrors.client 
-                      ? 'border-red-300 bg-red-50' 
-                      : 'border-gray-200 focus:border-blue-500'
-                  }`}
                   placeholder="Nome do cliente"
+                  className={`w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                    fieldErrors.client 
+                      ? 'border-red-400 bg-red-500/10' 
+                      : 'border-gray-600 focus:border-blue-500'
+                  }`}
                 />
                 {fieldErrors.client && (
                   <p className="text-red-500 text-sm mt-1 flex items-center">
@@ -464,7 +471,7 @@ const GenerateReport: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3">
+                <label className="block text-sm font-semibold text-white mb-3">
                   Local do Teste
                 </label>
                 <input
@@ -477,12 +484,12 @@ const GenerateReport: React.FC = () => {
                       setFieldErrors(prev => ({ ...prev, site: error }));
                     }
                   }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                    fieldErrors.site 
-                      ? 'border-red-300 bg-red-50' 
-                      : 'border-gray-200 focus:border-blue-500'
-                  }`}
                   placeholder="Local onde será realizado o teste"
+                  className={`w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                    fieldErrors.site 
+                      ? 'border-red-400 bg-red-500/10' 
+                      : 'border-gray-600 focus:border-blue-500'
+                  }`}
                 />
                 {fieldErrors.site && (
                   <p className="text-red-500 text-sm mt-1 flex items-center">
@@ -493,7 +500,7 @@ const GenerateReport: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3">
+                <label className="block text-sm font-semibold text-white mb-3">
                   Operador Responsável
                 </label>
                 <input
@@ -506,12 +513,12 @@ const GenerateReport: React.FC = () => {
                       setFieldErrors(prev => ({ ...prev, operator: error }));
                     }
                   }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                    fieldErrors.operator 
-                      ? 'border-red-300 bg-red-50' 
-                      : 'border-gray-200 focus:border-blue-500'
-                  }`}
                   placeholder="Nome do operador responsável"
+                  className={`w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                    fieldErrors.operator 
+                      ? 'border-red-400 bg-red-500/10' 
+                      : 'border-gray-600 focus:border-blue-500'
+                  }`}
                 />
                 {fieldErrors.operator && (
                   <p className="text-red-500 text-sm mt-1 flex items-center">
@@ -526,7 +533,7 @@ const GenerateReport: React.FC = () => {
             <button
               onClick={generateReport}
               disabled={generating}
-              className="w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+              className="w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
             >
               {generating ? (
                 <>
@@ -543,14 +550,14 @@ const GenerateReport: React.FC = () => {
           </div>
 
           {/* Preview do Relatório */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+          <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-8">
             <div className="flex items-center mb-8">
-              <div className="p-3 bg-green-100 rounded-xl mr-4">
-                <DocumentTextIcon className="w-6 h-6 text-green-600" />
+              <div className="p-3 bg-green-500/20 rounded-xl mr-4">
+                <DocumentTextIcon className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Preview do Relatório</h2>
-                <p className="text-gray-600">Visualização em tempo real</p>
+                <h2 className="text-2xl font-bold text-white">Preview do Relatório</h2>
+                <p className="text-gray-400">Visualização em tempo real</p>
               </div>
             </div>
 
@@ -575,11 +582,11 @@ const GenerateReport: React.FC = () => {
 
             {!generatedReport ? (
               <div className="text-center py-16">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                   <DocumentTextIcon className="w-12 h-12 text-blue-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">Nenhum relatório gerado</h3>
-                <p className="text-gray-500 mb-4">
+                <h3 className="text-xl font-semibold text-white mb-2">Nenhum relatório gerado</h3>
+                <p className="text-gray-300 mb-4">
                   Configure os parâmetros e clique em "Gerar Relatório com IA"
                 </p>
                 <div className="flex items-center justify-center text-sm text-gray-400">
@@ -590,35 +597,35 @@ const GenerateReport: React.FC = () => {
             ) : (
               <div className="space-y-6">
                 {/* Informações do relatório */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <InformationCircleIcon className="w-5 h-5 mr-2 text-blue-500" />
+                <div className="bg-gray-800 rounded-2xl border border-gray-700 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <InformationCircleIcon className="w-5 h-5 mr-2 text-blue-400" />
                     Informações do Relatório
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center">
-                      <span className="font-semibold text-gray-700 w-20">Categoria:</span>
-                      <span className="ml-3 text-gray-900 capitalize bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                      <span className="font-semibold text-gray-300 w-24">Categoria:</span>
+                      <span className="ml-3 capitalize bg-gray-700 text-white px-3 py-1 rounded-lg text-sm font-medium">
                         {generatedReport.category}
                       </span>
                     </div>
                     <div className="flex items-center">
-                      <span className="font-semibold text-gray-700 w-20">Tensão:</span>
-                      <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                      <span className="font-semibold text-gray-300 w-24">Tensão:</span>
+                      <span className="ml-3 bg-gray-700 text-white px-3 py-1 rounded-lg text-sm font-medium">
                         {generatedReport.kv} kV
                       </span>
                     </div>
                     {generatedReport.tag && (
                       <div className="flex items-center">
-                        <span className="font-semibold text-gray-700 w-20">Tag:</span>
-                        <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                        <span className="font-semibold text-gray-300 w-24">Tag:</span>
+                        <span className="ml-3 bg-gray-700 text-white px-3 py-1 rounded-lg text-sm font-medium">
                           {generatedReport.tag}
                         </span>
                       </div>
                     )}
                     <div className="flex items-center">
-                      <span className="font-semibold text-gray-700 w-20">DAI:</span>
-                      <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                      <span className="font-semibold text-gray-300 w-24">DAI:</span>
+                      <span className="ml-3 bg-blue-500/20 text-blue-300 px-3 py-1 rounded-lg text-sm font-semibold">
                         {generatedReport.dai}
                       </span>
                     </div>
@@ -627,35 +634,35 @@ const GenerateReport: React.FC = () => {
 
                 {/* Série de leituras */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <BoltIcon className="w-5 h-5 mr-2 text-green-500" />
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <BoltIcon className="w-5 h-5 mr-2 text-green-400" />
                     Série de Leituras IR
                   </h3>
-                  <div className="border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gradient-to-r from-green-50 to-blue-50">
+                  <div className="border-2 border-gray-700 rounded-xl overflow-hidden shadow-sm">
+                    <table className="min-w-full divide-y divide-gray-700">
+                      <thead className="bg-gray-700">
                         <tr>
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200 uppercase tracking-wider">
                             Tempo
                           </th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200 uppercase tracking-wider">
                             Tensão (kV)
                           </th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-200 uppercase tracking-wider">
                             Resistência
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-100">
+                      <tbody className="bg-gray-800 divide-y divide-gray-700">
                         {generatedReport.readings.map((reading, index) => (
-                          <tr key={index} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          <tr key={index} className="hover:bg-gray-700 transition-colors">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-200">
                               {reading.time}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-4 py-3 text-sm text-gray-200">
                               {reading.kv}
                             </td>
-                            <td className="px-4 py-3 text-sm font-mono text-gray-900">
+                            <td className="px-4 py-3 text-sm font-mono text-gray-200">
                               {reading.resistance}
                             </td>
                           </tr>
@@ -670,7 +677,7 @@ const GenerateReport: React.FC = () => {
                   <button
                     onClick={regenerateReport}
                     disabled={generating}
-                    className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
+                    className="flex-1 bg-gray-700 text-gray-200 py-3 px-6 rounded-xl hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
                   >
                     <ArrowPathIcon className="w-5 h-5 mr-2" />
                     Regenerar
@@ -701,7 +708,7 @@ const GenerateReport: React.FC = () => {
                   <button
                     onClick={exportReport}
                     disabled={exporting}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
                   >
                     {exporting ? (
                       <>

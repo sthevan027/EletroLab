@@ -303,7 +303,7 @@ const MultiPhase: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gray-900">
       {/* Notification */}
       {showNotification && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right">
@@ -329,29 +329,33 @@ const MultiPhase: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50">
+      <div className="pt-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center">
+          <div className="bg-gray-800/70 border border-gray-700 rounded-2xl shadow-xl px-5 sm:px-8 py-6 flex items-center justify-between">
+            <div className="flex items-start">
               <button
                 onClick={() => navigate('/')}
-                className="mr-4 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+                className="mr-4 mt-1 p-2 text-gray-400 hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-700"
+                aria-label="Voltar"
               >
                 <ArrowLeftIcon className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">
                   Gerador Multi-Fase
                 </h1>
-                <p className="text-gray-600 mt-1 flex items-center">
-                  <SparklesIcon className="w-4 h-4 mr-1 text-purple-500" />
+                <p className="text-gray-400 mt-1 flex items-center">
+                  <SparklesIcon className="w-4 h-4 mr-1 text-purple-400" />
                   Relatórios IR para equipamentos multi-fase com IA
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-gray-500 bg-purple-50 px-3 py-2 rounded-full">
-                <CpuChipIcon className="w-4 h-4 mr-2 text-purple-500" />
+            <div className="flex items-center">
+              <div className="flex items-center text-sm text-gray-200 bg-purple-500/15 px-4 py-2 rounded-full border border-purple-500/30 shadow-inner">
+                <span className="relative mr-2 block w-2 h-2 rounded-full bg-purple-400">
+                  <span className="absolute inset-0 rounded-full bg-purple-400 animate-ping opacity-60"></span>
+                </span>
+                <CpuChipIcon className="w-4 h-4 mr-1 text-purple-400" />
                 <span className="font-medium">IA Ativa</span>
               </div>
             </div>
@@ -363,25 +367,25 @@ const MultiPhase: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Formulário de Configuração */}
           <div className="space-y-8">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+            <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-8">
               <div className="flex items-center mb-8">
-                <div className="p-3 bg-purple-100 rounded-xl mr-4">
-                  <CogIcon className="w-6 h-6 text-purple-600" />
+                <div className="p-3 bg-purple-500/20 rounded-xl mr-4">
+                  <CogIcon className="w-6 h-6 text-purple-400" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Configuração do Equipamento</h2>
-                  <p className="text-gray-600">Configure os parâmetros do teste multi-fase</p>
+                  <h2 className="text-2xl font-bold text-white">Configuração do Equipamento</h2>
+                  <p className="text-gray-400">Configure os parâmetros do teste multi-fase</p>
                 </div>
               </div>
             
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                  <BoltIcon className="w-4 h-4 mr-2 text-purple-500" />
+                <label className="flex text-sm font-semibold text-gray-200 mb-3 items-center">
+                  <BoltIcon className="w-4 h-4 mr-2 text-purple-400" />
                   Tipo de Equipamento
                 </label>
                 <select
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                   value={equipmentType}
                   onChange={(e) => setEquipmentType(e.target.value as Category)}
                 >
@@ -395,13 +399,13 @@ const MultiPhase: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                    <BoltIcon className="w-4 h-4 mr-2 text-purple-500" />
+                  <label className="flex text-sm font-semibold text-gray-200 mb-3 items-center">
+                    <BoltIcon className="w-4 h-4 mr-2 text-purple-400" />
                     Tensão (kV)
                   </label>
                   <input
                     type="number"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                    className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                     value={voltage}
                     onChange={(e) => setVoltage(Number(e.target.value))}
                     step="0.1"
@@ -411,13 +415,13 @@ const MultiPhase: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                    <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                  <label className="flex text-sm font-semibold text-gray-200 mb-3 items-center">
+                    <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-400" />
                     Duração (min)
                   </label>
                   <input
                     type="number"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                    className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                     value={duration}
                     onChange={(e) => setDuration(Number(e.target.value))}
                     min="60"
@@ -428,13 +432,13 @@ const MultiPhase: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                <label className="flex text-sm font-semibold text-gray-200 mb-3 items-center">
+                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-400" />
                   Tag do Equipamento
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                   placeholder="Ex: MOTOR-01, TRAFO-02"
                   value={equipmentTag}
                   onChange={(e) => setEquipmentTag(e.target.value)}
@@ -442,13 +446,13 @@ const MultiPhase: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                <label className="flex text-sm font-semibold text-gray-200 mb-3 items-center">
+                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-400" />
                   Operador Responsável
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                   placeholder="Nome do operador responsável"
                   value={operator}
                   onChange={(e) => setOperator(e.target.value)}
@@ -458,28 +462,28 @@ const MultiPhase: React.FC = () => {
           </div>
 
           {/* Configuração das Fases */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+          <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-8">
             <div className="flex items-center mb-8">
-              <div className="p-3 bg-indigo-100 rounded-xl mr-4">
-                <ChartBarIcon className="w-6 h-6 text-indigo-600" />
+              <div className="p-3 bg-indigo-500/20 rounded-xl mr-4">
+                <ChartBarIcon className="w-6 h-6 text-indigo-400" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Configuração das Fases</h2>
-                <p className="text-gray-600">Configure as fases e combinações do sistema</p>
+                <h2 className="text-2xl font-bold text-white">Configuração das Fases</h2>
+                <p className="text-gray-400">Configure as fases e combinações do sistema</p>
               </div>
             </div>
 
             <div className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-semibold text-gray-800 flex items-center">
-                    <BoltIcon className="w-4 h-4 mr-2 text-indigo-500" />
+                  <label className="flex text-sm font-semibold text-gray-200 items-center">
+                    <BoltIcon className="w-4 h-4 mr-2 text-indigo-400" />
                     Fases do Sistema
                   </label>
                   <button
                     type="button"
                     onClick={addPhase}
-                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium bg-indigo-50 px-3 py-2 rounded-lg hover:bg-indigo-100 transition-colors"
+                    className="text-indigo-400 hover:text-indigo-300 text-sm font-medium bg-indigo-500/20 px-3 py-2 rounded-lg hover:bg-indigo-500/30 transition-colors border border-indigo-500/30"
                   >
                     <PlusIcon className="w-4 h-4 inline mr-1" />
                     Adicionar Fase
@@ -491,7 +495,7 @@ const MultiPhase: React.FC = () => {
                     <div key={index} className="flex items-center gap-3">
                       <input
                         type="text"
-                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        className="flex-1 px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         value={phase}
                         onChange={(e) => updatePhaseName(index, e.target.value)}
                         placeholder={`Fase ${index + 1}`}
@@ -500,7 +504,7 @@ const MultiPhase: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => removePhase(index)}
-                          className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
+                          className="p-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors"
                         >
                           <TrashIcon className="w-5 h-5" />
                         </button>
@@ -511,13 +515,13 @@ const MultiPhase: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-500" />
+                <label className="flex text-sm font-semibold text-gray-200 mb-3 items-center">
+                  <InformationCircleIcon className="w-4 h-4 mr-2 text-gray-400" />
                   Nome da Massa/Terra
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                   value={groundName}
                   onChange={(e) => setGroundName(e.target.value)}
                   placeholder="Terra, PE, Massa"
@@ -526,14 +530,14 @@ const MultiPhase: React.FC = () => {
 
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-semibold text-gray-800 flex items-center">
-                    <BoltIcon className="w-4 h-4 mr-2 text-indigo-500" />
+                  <label className="flex text-sm font-semibold text-gray-200 items-center">
+                    <BoltIcon className="w-4 h-4 mr-2 text-indigo-400" />
                     Combinações Fase/Fase
                   </label>
                   <button
                     type="button"
                     onClick={addCombination}
-                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium bg-indigo-50 px-3 py-2 rounded-lg hover:bg-indigo-100 transition-colors"
+                    className="text-indigo-400 hover:text-indigo-300 text-sm font-medium bg-indigo-500/20 px-3 py-2 rounded-lg hover:bg-indigo-500/30 transition-colors border border-indigo-500/30"
                   >
                     <PlusIcon className="w-4 h-4 inline mr-1" />
                     Adicionar Combinação
@@ -544,7 +548,7 @@ const MultiPhase: React.FC = () => {
                   {phaseCombinations.map((combo, comboIndex) => (
                     <div key={comboIndex} className="flex items-center gap-3">
                       <select
-                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        className="flex-1 px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         value={combo[0]}
                         onChange={(e) => updateCombination(comboIndex, 0, e.target.value)}
                       >
@@ -552,9 +556,9 @@ const MultiPhase: React.FC = () => {
                           <option key={phase} value={phase}>{phase}</option>
                         ))}
                       </select>
-                      <span className="text-gray-500 font-bold text-lg">×</span>
+                      <span className="text-gray-400 font-bold text-lg">×</span>
                       <select
-                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        className="flex-1 px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         value={combo[1]}
                         onChange={(e) => updateCombination(comboIndex, 1, e.target.value)}
                       >
@@ -565,7 +569,7 @@ const MultiPhase: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => removeCombination(comboIndex)}
-                        className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
+                        className="p-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors"
                       >
                         <TrashIcon className="w-5 h-5" />
                       </button>
@@ -578,17 +582,17 @@ const MultiPhase: React.FC = () => {
 
           {/* Erros de Validação */}
           {validationErrors.length > 0 && (
-            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+            <div className="bg-red-500/10 border-2 border-red-500/30 rounded-xl p-6">
               <div className="flex items-start">
-                <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mt-0.5 mr-3" />
+                <ExclamationTriangleIcon className="w-6 h-6 text-red-400 mt-0.5 mr-3" />
                 <div>
-                  <h3 className="text-lg font-semibold text-red-800 mb-2">
+                  <h3 className="text-lg font-semibold text-red-400 mb-2">
                     Erros de Validação
                   </h3>
-                  <ul className="space-y-1 text-sm text-red-700">
+                  <ul className="space-y-1 text-sm text-red-300">
                     {validationErrors.map((error, index) => (
                       <li key={index} className="flex items-center">
-                        <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                        <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
                         {error}
                       </li>
                     ))}
@@ -602,7 +606,7 @@ const MultiPhase: React.FC = () => {
           <button
             onClick={generateReport}
             disabled={generating}
-            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 px-6 rounded-xl hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 px-6 rounded-xl hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
           >
             {generating ? (
               <>
@@ -623,22 +627,22 @@ const MultiPhase: React.FC = () => {
           {generatedReport ? (
             <>
               {/* Cabeçalho do Resultado */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+              <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-8">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
-                    <div className="p-3 bg-green-100 rounded-xl mr-4">
-                      <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                    <div className="p-3 bg-green-500/20 rounded-xl mr-4">
+                      <CheckCircleIcon className="w-6 h-6 text-green-400" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Relatório Gerado</h2>
-                      <p className="text-gray-600">Relatório multi-fase criado com sucesso</p>
+                      <h2 className="text-2xl font-bold text-white">Relatório Gerado</h2>
+                      <p className="text-gray-400">Relatório multi-fase criado com sucesso</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <span className="text-sm font-semibold text-gray-700">
+                    <span className="text-sm font-semibold text-gray-300">
                       Confiança IA: {(aiConfidence * 100).toFixed(0)}%
                     </span>
-                    <div className="w-20 bg-gray-200 rounded-full h-3">
+                    <div className="w-20 bg-gray-700 rounded-full h-3">
                       <div 
                         className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${aiConfidence * 100}%` }}
@@ -649,26 +653,26 @@ const MultiPhase: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex items-center">
-                    <span className="font-semibold text-gray-700 w-24">Equipamento:</span>
-                    <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                    <span className="font-semibold text-gray-300 w-24">Equipamento:</span>
+                    <span className="ml-3 text-white bg-gray-700 px-3 py-1 rounded-lg text-sm font-medium">
                       {generatedReport.equipmentTag}
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <span className="font-semibold text-gray-700 w-24">Operador:</span>
-                    <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                    <span className="font-semibold text-gray-300 w-24">Operador:</span>
+                    <span className="ml-3 text-white bg-gray-700 px-3 py-1 rounded-lg text-sm font-medium">
                       {generatedReport.operator}
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <span className="font-semibold text-gray-700 w-24">Fases:</span>
-                    <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                    <span className="font-semibold text-gray-300 w-24">Fases:</span>
+                    <span className="ml-3 text-white bg-gray-700 px-3 py-1 rounded-lg text-sm font-medium">
                       {phaseNames.join(', ')}
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <span className="font-semibold text-gray-700 w-24">Data/Hora:</span>
-                    <span className="ml-3 text-gray-900 bg-white px-3 py-1 rounded-lg text-sm font-medium">
+                    <span className="font-semibold text-gray-300 w-24">Data/Hora:</span>
+                    <span className="ml-3 text-white bg-gray-700 px-3 py-1 rounded-lg text-sm font-medium">
                       {generatedReport.createdAt.toLocaleString('pt-BR')}
                     </span>
                   </div>
@@ -676,33 +680,33 @@ const MultiPhase: React.FC = () => {
               </div>
 
               {/* Resumo dos Testes */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+              <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-8">
                 <div className="flex items-center mb-6">
-                  <div className="p-3 bg-blue-100 rounded-xl mr-4">
-                    <DocumentTextIcon className="w-6 h-6 text-blue-600" />
+                  <div className="p-3 bg-blue-500/20 rounded-xl mr-4">
+                    <DocumentTextIcon className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">Resumo dos Testes</h3>
-                    <p className="text-gray-600">Testes realizados no equipamento</p>
+                    <h3 className="text-xl font-bold text-white">Resumo dos Testes</h3>
+                    <p className="text-gray-400">Testes realizados no equipamento</p>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4 text-sm font-semibold text-gray-700 border-b-2 border-gray-200 pb-3">
+                  <div className="grid grid-cols-3 gap-4 text-sm font-semibold text-gray-300 border-b-2 border-gray-600 pb-3">
                     <span>Teste</span>
                     <span>Leituras</span>
                     <span>Status</span>
                   </div>
                   
                   {phaseCombinations.map((combo, index) => (
-                    <div key={index} className="grid grid-cols-3 gap-4 text-sm py-3 border-b border-gray-100">
-                      <span className="font-semibold text-gray-900">
+                    <div key={index} className="grid grid-cols-3 gap-4 text-sm py-3 border-b border-gray-700">
+                      <span className="font-semibold text-white">
                         {combo[0]} × {combo[1]}
                       </span>
-                      <span className="text-gray-600">
+                      <span className="text-gray-400">
                         {generatedReport.readings?.filter(r => r.phase === index).length || 4} leituras
                       </span>
-                      <span className="text-green-600 font-semibold flex items-center">
+                      <span className="text-green-400 font-semibold flex items-center">
                         <CheckCircleIcon className="w-4 h-4 mr-1" />
                         Completo
                       </span>
@@ -710,14 +714,14 @@ const MultiPhase: React.FC = () => {
                   ))}
                   
                   {phaseNames.map((phase, index) => (
-                    <div key={`ground-${index}`} className="grid grid-cols-3 gap-4 text-sm py-3 border-b border-gray-100">
-                      <span className="font-semibold text-gray-900">
+                    <div key={`ground-${index}`} className="grid grid-cols-3 gap-4 text-sm py-3 border-b border-gray-700">
+                      <span className="font-semibold text-white">
                         {phase} × {groundName}
                       </span>
-                      <span className="text-gray-600">
+                      <span className="text-gray-400">
                         4 leituras
                       </span>
-                      <span className="text-green-600 font-semibold flex items-center">
+                      <span className="text-green-400 font-semibold flex items-center">
                         <CheckCircleIcon className="w-4 h-4 mr-1" />
                         Completo
                       </span>
@@ -732,10 +736,10 @@ const MultiPhase: React.FC = () => {
                   <button
                     onClick={saveReport}
                     disabled={saving}
-                    className={`flex-1 py-3 px-6 rounded-xl focus:outline-none focus:ring-4 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02] ${
+                    className={`flex-1 py-3 px-6 rounded-xl focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02] ${
                       generatedReport.isSaved 
-                        ? 'bg-green-100 text-green-700 border-2 border-green-300' 
-                        : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 focus:ring-green-300'
+                        ? 'bg-green-500/20 text-green-400 border-2 border-green-500/30' 
+                        : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 focus:ring-green-500/50'
                     }`}
                   >
                     {saving ? (
@@ -755,7 +759,7 @@ const MultiPhase: React.FC = () => {
                 <button
                   onClick={exportToPDF}
                   disabled={exporting}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-xl hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-6 rounded-xl hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-purple-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
                 >
                   {exporting ? (
                     <>
@@ -772,7 +776,7 @@ const MultiPhase: React.FC = () => {
 
                 <button
                   onClick={resetForm}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-300 focus:ring-offset-2 flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
+                  className="flex-1 bg-gray-700 text-gray-200 py-3 px-6 rounded-xl hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
                 >
                   <PlusIcon className="w-5 h-5 mr-2" />
                   Gerar Novo
@@ -780,31 +784,31 @@ const MultiPhase: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-12 text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-12 text-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-purple-500/20 to-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <ChartBarIcon className="w-12 h-12 text-purple-400" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-700 mb-4">
+              <h3 className="text-2xl font-bold text-white mb-4">
                 Relatório Multi-Fase
               </h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              <p className="text-gray-400 mb-6 max-w-md mx-auto">
                 Configure as fases e combinações do seu equipamento e gere um relatório completo com IA
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500 max-w-lg mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-400 max-w-lg mx-auto">
                 <div className="flex items-center">
-                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-400" />
                   Testes fase × fase automatizados
                 </div>
                 <div className="flex items-center">
-                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-400" />
                   Testes fase × massa correlacionados
                 </div>
                 <div className="flex items-center">
-                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-400" />
                   Análise de consistência com IA
                 </div>
                 <div className="flex items-center">
-                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-500" />
+                  <CheckCircleIcon className="w-4 h-4 mr-2 text-green-400" />
                   Exportação profissional em PDF
                 </div>
               </div>

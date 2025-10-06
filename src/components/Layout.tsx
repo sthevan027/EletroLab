@@ -72,7 +72,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </div>
 
       {/* Main Content */}
-      <div className="ml-64">
+      <div className="ml-64 bg-gray-900 min-h-screen">
         <main className="p-6">
           {children}
         </main>
