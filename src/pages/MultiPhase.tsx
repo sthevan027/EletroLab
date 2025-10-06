@@ -813,6 +813,7 @@ const MultiPhase: React.FC = () => {
         </div>
       </div>
     </div>
+    </div>
   );
 };
 

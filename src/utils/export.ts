@@ -186,8 +186,8 @@ function generateCupomHTML(report: IRReport, options: ExportOptions): string {
  * Gera HTML para relatório multi-fase
  */
 function generateMultiPhaseHTML(report: MultiPhaseReport, options: ExportOptions): string {
-  const equipmentInfo = report.equipment || {};
-  const summary = report.summary || {};
+  const equipmentInfo = report.equipment || { tag: '', category: '' };
+  const summary = report.summary || { phaseCount: 0, averageResistance: 0, status: '' };
   
   const metadata = options.includeMetadata ? `
     <div class="metadata">
