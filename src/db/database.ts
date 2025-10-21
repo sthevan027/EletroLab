@@ -141,6 +141,11 @@ export const defaultCategoryProfiles: Record<string, CategoryProfile> = {
 // Inicializar configuração padrão se não existir
 export async function initializeDatabase() {
   try {
+    // Verificar se o banco está disponível
+    if (!db.isOpen()) {
+      await db.open();
+    }
+    
     // Configuração original
     const config = await db.configuration.get('default');
     if (!config) {
@@ -155,12 +160,23 @@ export async function initializeDatabase() {
     if (profiles.length === 0) {
       await insertDefaultCategoryProfiles();
     }
+    
+    console.log('Banco de dados inicializado com sucesso');
   } catch (error) {
     console.error('Erro ao inicializar banco de dados:', error);
+    
     // Fallback para localStorage se IndexedDB falhar
-    if (!localStorage.getItem('eletrilab-config')) {
-      localStorage.setItem('eletrilab-config', JSON.stringify(defaultTestConfiguration));
+    try {
+      if (!localStorage.getItem('eletrilab-config')) {
+        localStorage.setItem('eletrilab-config', JSON.stringify(defaultTestConfiguration));
+      }
+      console.log('Usando fallback localStorage');
+    } catch (localError) {
+      console.error('Erro no fallback localStorage:', localError);
     }
+    
+    // Não relançar o erro para não quebrar a aplicação
+    // A aplicação deve continuar funcionando mesmo sem o banco
   }
 }
 

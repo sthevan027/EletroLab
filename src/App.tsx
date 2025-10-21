@@ -12,6 +12,8 @@ import Reports from './pages/Reports';
 import './index.css';
 
 function App() {
+  console.log('App component rendering...');
+  
   return (
     <Router>
       <Layout>
