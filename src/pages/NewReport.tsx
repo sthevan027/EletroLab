@@ -33,7 +33,13 @@ export default function NewReport() {
     location: '',
     responsible: '',
     observations: '',
-    recommendations: ''
+    recommendations: '',
+    // Campos físicos do cabo (opcionais)
+    cableLength: undefined as number | undefined,
+    cableGauge: undefined as number | undefined,
+    insulationMaterial: '' as '' | 'XLPE' | 'EPR' | 'PVC' | 'outro',
+    conductorDiameter: undefined as number | undefined,
+    insulationThickness: undefined as number | undefined
   });
 
   useEffect(() => {
@@ -376,6 +382,82 @@ export default function NewReport() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Especificações Físicas do Cabo (Opcional) */}
+        <div className="card p-6">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            Especificações Físicas do Cabo (Opcional)
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <label className="label">Comprimento (m)</label>
+              <input
+                type="number"
+                className="input"
+                value={reportForm.cableLength ?? ''}
+                onChange={(e) => setReportForm({ ...reportForm, cableLength: parseFloat(e.target.value) || undefined })}
+                placeholder="Ex: 20"
+                min={1}
+                step={0.1}
+              />
+            </div>
+            <div>
+              <label className="label">Bitola (mm²)</label>
+              <input
+                type="number"
+                className="input"
+                value={reportForm.cableGauge ?? ''}
+                onChange={(e) => setReportForm({ ...reportForm, cableGauge: parseFloat(e.target.value) || undefined })}
+                placeholder="Ex: 16"
+                min={0.5}
+                step={0.1}
+              />
+            </div>
+            <div>
+              <label className="label">Material Isolante</label>
+              <select
+                className="input"
+                value={reportForm.insulationMaterial}
+                onChange={(e) => setReportForm({ ...reportForm, insulationMaterial: e.target.value as any })}
+              >
+                <option value="">Selecione...</option>
+                <option value="XLPE">XLPE</option>
+                <option value="EPR">EPR</option>
+                <option value="PVC">PVC</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:col-span-2">
+              <div>
+                <label className="label">Ø Condutor (mm)</label>
+                <input
+                  type="number"
+                  className="input"
+                  value={reportForm.conductorDiameter ?? ''}
+                  onChange={(e) => setReportForm({ ...reportForm, conductorDiameter: parseFloat(e.target.value) || undefined })}
+                  placeholder="Ex: 5.5"
+                  min={0.1}
+                  step={0.1}
+                />
+              </div>
+              <div>
+                <label className="label">Espessura Isolante (mm)</label>
+                <input
+                  type="number"
+                  className="input"
+                  value={reportForm.insulationThickness ?? ''}
+                  onChange={(e) => setReportForm({ ...reportForm, insulationThickness: parseFloat(e.target.value) || undefined })}
+                  placeholder="Ex: 3.0"
+                  min={0.1}
+                  step={0.1}
+                />
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            Preencha para habilitar simulações físicas de megger em outros fluxos.
+          </p>
         </div>
 
         {/* Observações e Recomendações */}

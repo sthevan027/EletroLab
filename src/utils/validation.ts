@@ -634,6 +634,60 @@ export function validateIRReport(report: Partial<any>): ValidationResult {
   return { isValid: errors.length === 0, errors };
 }
 
+// === Validações Físicas do Cabo ===
+export function validatePhysicalCableInputs(inputs: {
+  cableLength?: number;
+  cableGauge?: number;
+  insulationMaterial?: 'XLPE' | 'EPR' | 'PVC' | 'outro' | string;
+  conductorDiameter?: number;
+  insulationThickness?: number;
+}): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  // Comprimento: 1 m a 100 km
+  if (inputs.cableLength !== undefined) {
+    const L = Number(inputs.cableLength);
+    if (isNaN(L) || L < 1 || L > 100_000) {
+      errors.push({ field: 'cableLength', message: 'Comprimento deve estar entre 1 m e 100.000 m', type: 'range' });
+    }
+  }
+
+  // Bitola: 0.5 a 500 mm²
+  if (inputs.cableGauge !== undefined) {
+    const G = Number(inputs.cableGauge);
+    if (isNaN(G) || G < 0.5 || G > 500) {
+      errors.push({ field: 'cableGauge', message: 'Bitola deve estar entre 0.5 e 500 mm²', type: 'range' });
+    }
+  }
+
+  // Material isolante: enum válido
+  if (inputs.insulationMaterial !== undefined) {
+    const mat = String(inputs.insulationMaterial).toUpperCase();
+    const valid = ['XLPE', 'EPR', 'PVC', 'OUTRO'];
+    if (!valid.includes(mat)) {
+      errors.push({ field: 'insulationMaterial', message: 'Material deve ser XLPE, EPR, PVC ou outro', type: 'format' });
+    }
+  }
+
+  // Diâmetros informados: D > d
+  if (inputs.conductorDiameter !== undefined || inputs.insulationThickness !== undefined) {
+    const d = Number(inputs.conductorDiameter || 0);
+    const t = Number(inputs.insulationThickness || 0);
+    if (d > 0 && t > 0) {
+      const D = d + 2 * t;
+      if (!(D > d)) {
+        errors.push({ field: 'diameters', message: 'Condição geométrica inválida: D deve ser maior que d', type: 'geometry' });
+      }
+    }
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
+export function isPhysicalInputValid(inputs: Parameters<typeof validatePhysicalCableInputs>[0]): boolean {
+  return validatePhysicalCableInputs(inputs).isValid;
+}
+
 // === Helpers de compatibilidade ===
 export function validateEquipment(e: import('../types').Equipment) {
   // Faça validação real depois; por ora só garante assinatura

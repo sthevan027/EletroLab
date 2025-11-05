@@ -3,8 +3,9 @@
  * Sistema de aprendizado adaptativo com algoritmos de machine learning
  */
 
-import { Category, CategoryProfile, IRReport, MultiPhaseReport } from '../types';
+import { Category, CategoryProfile, IRReport, MultiPhaseReport, PhysicalCableOptions } from '../types';
 import { dbUtils } from '../db/database';
+import { calculateHybridResistance, formatResistance as physicsFormatResistance } from './physics';
 
 // Interfaces para o sistema de IA
 export interface AIPattern {
@@ -37,6 +38,8 @@ export interface AIGenerationContext {
   maintenanceHistory?: string[];
   manufacturer?: string;
   model?: string;
+  // Preferência por cálculo físico quando disponível
+  physicalOptions?: PhysicalCableOptions;
 }
 
 export interface AIGenerationResult {
@@ -64,6 +67,28 @@ export class AIEngine {
    * Gera relatório IR usando IA avançada
    */
   async generateIRReport(context: AIGenerationContext): Promise<AIGenerationResult> {
+    // Fast-path: se houver dados físicos, priorizar cálculo físico
+    if (context.physicalOptions && context.category === 'cabo') {
+      const RiMOhm = calculateHybridResistance(
+        context.physicalOptions,
+        { temperature: context.environmentalFactors.temperature, humidity: context.environmentalFactors.humidity },
+        { boostShortLength: true }
+      );
+      const times = ['00:15', '00:30', '00:45', '01:00'];
+      const readings = times.map((time, index) => ({
+        time,
+        kv: '1.00',
+        resistance: physicsFormatResistance(index === 0 ? RiMOhm : RiMOhm * Math.pow(0.98, index))
+      }));
+      return {
+        readings,
+        confidence: 0.92,
+        insights: [],
+        patterns: [],
+        warnings: [],
+        recommendations: []
+      };
+    }
     // 1. Analisar padrões históricos
     const patterns = await this.analyzePatterns(context);
     

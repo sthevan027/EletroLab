@@ -3,8 +3,9 @@
  * Versão 2.0 com IA Avançada
  */
 
-import { Category, CategoryProfile, IRReport, MultiPhaseConfig, MultiPhaseReport } from '../types';
+import { Category, CategoryProfile, IRReport, MultiPhaseConfig, MultiPhaseReport, PhysicalCableOptions, EnvironmentalFactors } from '../types';
 import { formatResistance, formatVoltage, getStandardTimeSeries, calculateDAI, parseResistance } from './units';
+import { calculateHybridResistance, formatResistance as formatResistancePhysics, applyTimeDecay, getInsulationConstant, estimateDiametersFromGauge, calculatePhysicalResistance, scaleResistanceForLength, applyEnvironmentalAdjustments } from './physics';
 import { dbUtils } from '../db/database';
 import { aiEngine, AIGenerationContext, AIGenerationResult } from './ai-engine';
 
@@ -21,6 +22,12 @@ export interface IRGenerationOptions {
   operator?: string;
   manufacturer?: string;
   model?: string;
+  // Campos físicos opcionais
+  cableLength?: number;              // metros
+  cableGauge?: number;               // mm²
+  insulationMaterial?: 'XLPE' | 'EPR' | 'PVC' | 'outro';
+  conductorDiameter?: number;        // mm
+  insulationThickness?: number;      // mm
 }
 
 /**
@@ -37,6 +44,7 @@ export interface IRGenerationResult {
   insights?: any[];
   warnings?: string[];
   recommendations?: string[];
+  meta?: any;
 }
 
 /**
@@ -61,6 +69,65 @@ export async function gerarSerieIR(opts: IRGenerationOptions): Promise<IRGenerat
     manufacturer,
     model
   } = opts;
+
+  // 1) Priorizar cálculo físico quando dados do cabo estiverem disponíveis
+  const hasPhysicalInputs =
+    category === 'cabo' &&
+    opts.cableLength && opts.cableLength > 0 &&
+    opts.cableGauge && opts.cableGauge > 0 &&
+    !!opts.insulationMaterial;
+
+  if (hasPhysicalInputs) {
+    // Fatores ambientais básicos (poderão vir do formulário futuramente)
+    const temperature = 25 + (Math.random() - 0.5) * 6; // 22–28°C
+    const humidity = 55 + (Math.random() - 0.5) * 10;   // 50–60%
+
+    // Pipeline explícito para obter meta
+    const Ki = getInsulationConstant(opts.insulationMaterial as any);
+    const { d, D } = estimateDiametersFromGauge(
+      opts.cableGauge!,
+      opts.conductorDiameter,
+      opts.insulationThickness
+    );
+    const RiBaseMOhm = calculatePhysicalResistance(Ki, D, d, opts.cableLength!);
+    const scaledMOhm = scaleResistanceForLength(RiBaseMOhm, opts.cableLength!, { boostShortLength: opts.shortLengthBoost !== false });
+    const scaleFactor = RiBaseMOhm > 0 ? scaledMOhm / RiBaseMOhm : 1;
+    const RiMOhm = applyEnvironmentalAdjustments(scaledMOhm, temperature, humidity);
+
+    // Gerar série temporal com leve decaimento
+    const times = getStandardTimeSeries();
+    const readings = times.map((time, index) => {
+      const valueMOhm = applyTimeDecay(RiMOhm, index, 0.98);
+      return {
+        time,
+        kv: formatVoltage(kv),
+        resistance: formatResistancePhysics(valueMOhm, limitTOhm)
+      };
+    });
+
+    const dai = calculateDAI(readings);
+
+    return {
+      readings,
+      dai,
+      confidence: 0.9,
+      insights: [],
+      warnings: [],
+      recommendations: [],
+      meta: {
+        physics: {
+          RiBaseMOhm,
+          scaleFactor,
+          temperature,
+          humidity,
+          appliedBoost: opts.shortLengthBoost !== false,
+          material: opts.insulationMaterial,
+          gauge: opts.cableGauge,
+          lengthMeters: opts.cableLength
+        }
+      }
+    };
+  }
 
   // Buscar histórico de aprendizado
   const historicalData = await dbUtils.getAILearningHistory(category);
@@ -416,6 +483,9 @@ export async function generateMultiPhaseReport(
     operator: string;
     phaseCombinations: string[][];
     groundName: string;
+    physicalOptions?: PhysicalCableOptions;
+    environment?: EnvironmentalFactors;
+    boostShortLength?: boolean;
   }
 ): Promise<{
   report: MultiPhaseReport;
@@ -445,14 +515,47 @@ export async function generateMultiPhaseReport(
     model: undefined
   };
 
-  // Usar IA avançada para gerar valores base
-  const aiResult = await aiEngine.generateIRReport(context);
-  
-  // Gerar valores base para cada fase usando IA
-  const baseValues = phaseNames.map(() => {
-    const aiValues = aiResult.readings.map(r => parseResistance(r.resistance) || 0);
-    return aiValues[Math.floor(Math.random() * aiValues.length)];
-  });
+  // Determinar se podemos usar física
+  const canUsePhysics =
+    config.equipmentType === 'cabo' &&
+    options.physicalOptions &&
+    options.physicalOptions.length > 0 &&
+    options.physicalOptions.gauge > 0 &&
+    !!options.physicalOptions.material;
+
+  let baseValues: number[] = [];
+  let aiConfidence = 0.85;
+  let aiWarnings: string[] = [];
+  let aiInsights: any[] | undefined = undefined;
+  let aiRecommendations: any[] | undefined = undefined;
+
+  if (canUsePhysics) {
+    const env = options.environment || { temperature: 25, humidity: 50 };
+    const RiMOhm = calculateHybridResistance(
+      options.physicalOptions!,
+      env,
+      { boostShortLength: options.boostShortLength !== false }
+    );
+    // Base por fase com pequena variação (convertido para ohms)
+    baseValues = phaseNames.map(() => {
+      const jitter = 1 + (Math.random() - 0.5) * 0.04; // ±2%
+      return RiMOhm * jitter * 1e6;
+    });
+    aiConfidence = 0.9;
+  } else {
+    // Usar IA avançada para gerar valores base
+    const aiResult = await aiEngine.generateIRReport(context);
+    aiConfidence = aiResult.confidence;
+    aiWarnings = aiResult.warnings;
+    aiInsights = aiResult.insights;
+    aiRecommendations = aiResult.recommendations;
+    
+    // Gerar valores base para cada fase usando IA
+    baseValues = phaseNames.map(() => {
+      const aiValues = aiResult.readings.map(r => parseResistance(r.resistance) || 0);
+      return aiValues[Math.floor(Math.random() * aiValues.length)];
+    });
+  }
   
   // Gerar leituras para cada combinação e montar sub-relatórios
   const readings: {
@@ -483,14 +586,18 @@ export async function generateMultiPhaseReport(
         const timeMinutes = parseTime(time);
         let value = simulateTimeDecay(baseValue, timeMinutes, 0.95);
         
-        // Aplicar fatores ambientais usando IA
-        const temperature = context.environmentalFactors.temperature;
-        const humidity = context.environmentalFactors.humidity;
-        value = applyEnvironmentalFactors(value, temperature, humidity, profile);
-        
-        // Variação baseada na confiança da IA
-        const variation = 1 + (Math.random() - 0.5) * (1 - aiResult.confidence) * 0.2;
-        value *= variation;
+        if (canUsePhysics) {
+          value *= 1.1 * (1 + (Math.random() - 0.5) * 0.04);
+        } else {
+          // Aplicar fatores ambientais usando IA
+          const temperature = context.environmentalFactors.temperature;
+          const humidity = context.environmentalFactors.humidity;
+          value = applyEnvironmentalFactors(value, temperature, humidity, profile);
+          
+          // Variação baseada na confiança da IA
+          const variation = 1 + (Math.random() - 0.5) * (1 - aiConfidence) * 0.2;
+          value *= variation;
+        }
         
         readings.push({
           phase: comboIndex,
@@ -521,21 +628,27 @@ export async function generateMultiPhaseReport(
   
   // Testes fase × massa
   phaseNames.forEach((phase, phaseIndex) => {
-    const baseValue = baseValues[phaseIndex] * 0.8; // Fase/massa tipicamente menor
+    let baseValue = baseValues[phaseIndex];
+    // Fase/massa tipicamente menor
+    baseValue = baseValue * (canUsePhysics ? 0.93 : 0.8);
     const subReadings: { time: string; kv: string; resistance: string }[] = [];
     
     times.forEach(time => {
       const timeMinutes = parseTime(time);
       let value = simulateTimeDecay(baseValue, timeMinutes, 0.95);
       
-      // Aplicar fatores ambientais usando IA
-      const temperature = context.environmentalFactors.temperature;
-      const humidity = context.environmentalFactors.humidity;
-      value = applyEnvironmentalFactors(value, temperature, humidity, profile);
-      
-      // Variação baseada na confiança da IA
-      const variation = 1 + (Math.random() - 0.5) * (1 - aiResult.confidence) * 0.3;
-      value *= variation;
+      if (canUsePhysics) {
+        value *= 1.0 * (1 + (Math.random() - 0.5) * 0.06); // ±3%
+      } else {
+        // Aplicar fatores ambientais usando IA
+        const temperature = context.environmentalFactors.temperature;
+        const humidity = context.environmentalFactors.humidity;
+        value = applyEnvironmentalFactors(value, temperature, humidity, profile);
+        
+        // Variação baseada na confiança da IA
+        const variation = 1 + (Math.random() - 0.5) * (1 - aiConfidence) * 0.3;
+        value *= variation;
+      }
       
       readings.push({
         phase: phaseNames.length + phaseIndex, // Offset para fase/massa
@@ -562,8 +675,8 @@ export async function generateMultiPhaseReport(
     });
   });
   
-  // Calcular confiança baseada na IA
-  let confidence = aiResult.confidence;
+  // Calcular confiança baseada na IA/Física
+  let confidence = aiConfidence;
   
   // Verificar consistência dos valores
   const phaseToPhaseValues = readings.filter(r => r.phase < options.phaseCombinations.length);
@@ -575,7 +688,7 @@ export async function generateMultiPhaseReport(
   }
   
   // Adicionar warnings da IA
-  warnings.push(...aiResult.warnings);
+  warnings.push(...aiWarnings);
   
   // Criar relatório
   const report: MultiPhaseReport = {
@@ -618,8 +731,8 @@ export async function generateMultiPhaseReport(
     report,
     confidence,
     warnings,
-    insights: aiResult.insights,
-    recommendations: aiResult.recommendations
+    insights: aiInsights,
+    recommendations: aiRecommendations
   };
 }
 

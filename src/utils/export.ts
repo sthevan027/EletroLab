@@ -65,6 +65,7 @@ export async function exportMultiPhasePDF(
  * Gera HTML para relatório cupom
  */
 function generateCupomHTML(report: IRReport, options: ExportOptions): string {
+  const physicsMeta = (report.meta as any)?.physics;
   const metadata = options.includeMetadata ? `
     <div class="metadata">
       <p><strong>Categoria:</strong> ${report.category}</p>
@@ -74,6 +75,17 @@ function generateCupomHTML(report: IRReport, options: ExportOptions): string {
       ${report.client ? `<p><strong>Cliente:</strong> ${report.client}</p>` : ''}
       ${report.site ? `<p><strong>Local:</strong> ${report.site}</p>` : ''}
       ${report.operator ? `<p><strong>Operador:</strong> ${report.operator}</p>` : ''}
+      ${physicsMeta ? `
+      <div style="margin-top:6px; border-top:1px dashed #000; padding-top:6px;">
+        <p><strong>Modo:</strong> Física</p>
+        ${physicsMeta.material ? `<p><strong>Material:</strong> ${physicsMeta.material}</p>` : ''}
+        ${physicsMeta.gauge ? `<p><strong>Bitola:</strong> ${physicsMeta.gauge} mm²</p>` : ''}
+        ${physicsMeta.lengthMeters ? `<p><strong>Comprimento:</strong> ${physicsMeta.lengthMeters} m</p>` : ''}
+        <p><strong>Ri base:</strong> ${physicsMeta.RiBaseMOhm.toFixed(2)} MΩ</p>
+        <p><strong>Fator de escala:</strong> ${physicsMeta.scaleFactor.toFixed(2)}</p>
+        <p><strong>Ambiente:</strong> ${physicsMeta.temperature.toFixed(1)}°C / ${physicsMeta.humidity.toFixed(0)}%</p>
+      </div>
+      ` : ''}
     </div>
   ` : '';
 

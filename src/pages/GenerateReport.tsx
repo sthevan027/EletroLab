@@ -15,9 +15,10 @@ import {
   InformationCircleIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import { Category, IRReport, IRGenerationOptions, IRGenerationResult } from '../types';
+import { Category, IRReport, IRGenerationOptions } from '../types';
 import { generateIRSeries } from '../utils/generator';
-import { validateIRReport } from '../utils/validation';
+import { validateIRReport, validatePhysicalCableInputs } from '../utils/validation';
+import { calculateHybridResistance, formatResistance as physicsFormatResistance } from '../utils/physics';
 
 // Lazy load heavy components
 const AIInsights = lazy(() => import('../components/AIInsights'));
@@ -41,7 +42,13 @@ const GenerateReport: React.FC = () => {
     site: '',
     operator: '',
     manufacturer: '',
-    model: ''
+    model: '',
+    // Campos físicos padrão (opcionais)
+    cableLength: undefined,
+    cableGauge: undefined,
+    insulationMaterial: undefined,
+    conductorDiameter: undefined,
+    insulationThickness: undefined
   });
 
   const [generatedReport, setGeneratedReport] = useState<IRReport | null>(null);
@@ -127,6 +134,34 @@ const GenerateReport: React.FC = () => {
     return null;
   };
 
+  const isPhysicsMode = formData.category === 'cabo';
+  const physicsValidation = validatePhysicalCableInputs({
+    cableLength: formData.cableLength,
+    cableGauge: formData.cableGauge,
+    insulationMaterial: formData.insulationMaterial as any,
+    conductorDiameter: formData.conductorDiameter,
+    insulationThickness: formData.insulationThickness
+  });
+  const hasRequiredPhysics = Boolean(formData.cableLength && formData.cableGauge && formData.insulationMaterial);
+  const isPhysicsReady = isPhysicsMode && hasRequiredPhysics && physicsValidation.isValid;
+
+  // Preview do valor físico (GΩ/TΩ)
+  let physicsPreview: string | null = null;
+  if (isPhysicsReady) {
+    const RiMOhm = calculateHybridResistance(
+      {
+        length: formData.cableLength!,
+        gauge: formData.cableGauge!,
+        material: (formData.insulationMaterial as any) || 'outro',
+        conductorDiameter: formData.conductorDiameter,
+        insulationThickness: formData.insulationThickness
+      },
+      { temperature: 25, humidity: 50 },
+      { boostShortLength: formData.shortLengthBoost !== false }
+    );
+    physicsPreview = physicsFormatResistance(RiMOhm, formData.limitTOhm || 5);
+  }
+
   const generateReport = async () => {
     try {
       setGenerating(true);
@@ -145,7 +180,7 @@ const GenerateReport: React.FC = () => {
         return;
       }
 
-      // Gerar série IR
+      // Gerar série IR (generator já prioriza cálculo físico quando aplicável)
       const result = await generateIRSeries(formData);
       
       // Criar relatório
@@ -162,7 +197,8 @@ const GenerateReport: React.FC = () => {
         readings: result.readings,
         dai: result.dai,
         createdAt: new Date(),
-        isSaved: false
+        isSaved: false,
+        meta: (result as any).meta
       };
 
       setGeneratedReport(report);
@@ -405,6 +441,123 @@ const GenerateReport: React.FC = () => {
               </div>
             </div>
 
+            {/* Especificações Físicas do Cabo */}
+            {isPhysicsMode && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="flex text-sm font-semibold text-gray-200 items-center">
+                    <InformationCircleIcon className="w-4 h-4 mr-2 text-blue-400" />
+                    Especificações Físicas do Cabo
+                  </label>
+                  {isPhysicsReady && (
+                    <span className="text-xs font-semibold text-green-300 bg-green-500/20 border border-green-500/30 px-2 py-1 rounded-full">
+                      Simulador: Física
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">Comprimento (m)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="0.1"
+                      value={formData.cableLength ?? ''}
+                      onChange={(e) => handleInputChange('cableLength', parseFloat(e.target.value))}
+                      className="w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-600 focus:border-blue-500"
+                      placeholder="Ex: 20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">Bitola (mm²)</label>
+                    <input
+                      type="number"
+                      min="0.5"
+                      step="0.1"
+                      value={formData.cableGauge ?? ''}
+                      onChange={(e) => handleInputChange('cableGauge', parseFloat(e.target.value))}
+                      className="w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-600 focus:border-blue-500"
+                      placeholder="Ex: 16"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">Material Isolante</label>
+                    <select
+                      value={formData.insulationMaterial ?? ''}
+                      onChange={(e) => handleInputChange('insulationMaterial', e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-600 focus:border-blue-500"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="XLPE">XLPE</option>
+                      <option value="EPR">EPR</option>
+                      <option value="PVC">PVC</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-white mb-2">Ø Condutor (mm) <span className="text-gray-400 font-normal">(Opcional)</span></label>
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={formData.conductorDiameter ?? ''}
+                        onChange={(e) => handleInputChange('conductorDiameter', parseFloat(e.target.value))}
+                        className="w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-600 focus:border-blue-500"
+                        placeholder="Ex: 5.5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-white mb-2">Espessura Isolante (mm) <span className="text-gray-400 font-normal">(Opcional)</span></label>
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={formData.insulationThickness ?? ''}
+                        onChange={(e) => handleInputChange('insulationThickness', parseFloat(e.target.value))}
+                        className="w-full px-4 py-3 bg-gray-700 border-2 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-600 focus:border-blue-500"
+                        placeholder="Ex: 3.0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Erros físicos */}
+                {!physicsValidation.isValid && hasRequiredPhysics && (
+                  <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                    <ul className="text-sm text-red-300 space-y-1">
+                      {physicsValidation.errors.map((e, i) => (
+                        <li key={i} className="flex items-center">
+                          <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
+                          {e.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Preview */}
+                {isPhysicsReady && physicsPreview && (
+                  <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-300 text-sm">
+                    Valor previsto (ajustado): <span className="font-semibold">{physicsPreview}</span>
+                  </div>
+                )}
+                <div className="mt-4 flex items-center gap-3">
+                  <input
+                    id="shortLengthBoost"
+                    type="checkbox"
+                    checked={formData.shortLengthBoost !== false}
+                    onChange={(e) => handleInputChange('shortLengthBoost', e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="shortLengthBoost" className="text-sm text-gray-300">
+                    Aplicar escala para cabos curtos (melhora valores < 100 m)
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Tag */}
             <div className="mb-6">
               <label className="flex text-sm font-semibold text-white mb-3 items-center">
@@ -532,7 +685,7 @@ const GenerateReport: React.FC = () => {
             {/* Botão Gerar */}
             <button
               onClick={generateReport}
-              disabled={generating}
+              disabled={generating || (isPhysicsMode && !isPhysicsReady)}
               className="w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
             >
               {generating ? (

@@ -164,6 +164,18 @@ export interface IRReport {
   dai: string;               // "1.15" ou "Undefined"
   createdAt: Date;
   isSaved: boolean;          // true = salvo no IndexedDB, false = apenas preview
+  meta?: {
+    physics?: {
+      RiBaseMOhm: number;
+      scaleFactor: number;
+      temperature: number;
+      humidity: number;
+      appliedBoost: boolean;
+      material?: 'XLPE' | 'EPR' | 'PVC' | 'outro' | string;
+      gauge?: number;
+      lengthMeters?: number;
+    };
+  };
 }
 
 // Perfil de categoria para geração
@@ -385,10 +397,31 @@ export interface IRGenerationOptions {
   manufacturer?: string;
   model?: string;
   aiEnabled?: boolean;
+  // --- Campos físicos do cabo (opcionais) ---
+  cableLength?: number;              // metros
+  cableGauge?: number;               // bitola em mm²
+  insulationMaterial?: 'XLPE' | 'EPR' | 'PVC' | 'outro';
+  conductorDiameter?: number;        // mm (opcional)
+  insulationThickness?: number;      // mm (opcional)
+  shortLengthBoost?: boolean;        // aplica escala para cabos curtos (default: true)
 }
 
 export interface IRGenerationResult {
   report: IRReport;
   confidence: number;
   warnings?: string[];
+}
+
+// === TIPOS FÍSICOS (NOVOS) ===
+export interface PhysicalCableOptions {
+  length: number;                    // metros
+  gauge: number;                     // mm²
+  material: 'XLPE' | 'EPR' | 'PVC' | 'outro';
+  conductorDiameter?: number;        // mm
+  insulationThickness?: number;      // mm
+}
+
+export interface EnvironmentalFactors {
+  temperature: number;               // °C
+  humidity: number;                  // %
 }
