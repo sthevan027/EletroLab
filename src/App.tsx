@@ -9,6 +9,10 @@ import Equipment from './pages/Equipment';
 import Parameters from './pages/Parameters';
 import MultiPhase from './pages/MultiPhase';
 import Reports from './pages/Reports';
+import Cable from './pages/Cable';
+import Breaker from './pages/Breaker';
+import Tools from './pages/Tools';
+import Panel from './pages/Panel';
 import './index.css';
 
 function App() {
@@ -26,6 +30,10 @@ function App() {
           <Route path="/parameters" element={<Parameters />} />
           <Route path="/multiphase" element={<MultiPhase />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/cable" element={<Cable />} />
+          <Route path="/breaker" element={<Breaker />} />
+          <Route path="/tools" element={<Tools />} />
+          <Route path="/panel" element={<Panel />} />
         </Routes>
       </Layout>
     </Router>

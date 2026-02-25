@@ -182,7 +182,7 @@ const Dashboard: React.FC = () => {
           <BoltIcon className="w-6 h-6 text-yellow-400" />
           <h2 className="text-xl font-semibold text-white">Ações Rápidas</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Link
             to="/generate"
             className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
@@ -209,6 +209,66 @@ const Dashboard: React.FC = () => {
               <div>
                 <h3 className="font-medium text-white">Gerar Multi-Fase</h3>
                 <p className="text-sm text-gray-400">Múltiplos relatórios com IA</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/cable"
+            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-cyan-500/20 rounded-lg">
+                <CpuChipIcon className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white">Dimensionar Cabos</h3>
+                <p className="text-sm text-gray-400">Corrente, queda e seção</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/breaker"
+            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-amber-500/20 rounded-lg">
+                <BoltIcon className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white">Disjuntor</h3>
+                <p className="text-sm text-gray-400">Curva e coordenação</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/tools"
+            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-orange-500/20 rounded-lg">
+                <CpuChipIcon className="w-6 h-6 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white">Ferramentas</h3>
+                <p className="text-sm text-gray-400">Microhm e Hi-Pot</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/panel"
+            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-emerald-500/20 rounded-lg">
+                <ChartBarIcon className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white">Painel</h3>
+                <p className="text-sm text-gray-400">Megger + Cabo + Hipot</p>
               </div>
             </div>
           </Link>

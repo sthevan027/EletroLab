@@ -6,7 +6,11 @@ import {
   CogIcon, 
   CircleStackIcon,
   ChartBarIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  BeakerIcon,
+  ScaleIcon,
+  WrenchScrewdriverIcon,
+  Squares2X2Icon
 } from '@heroicons/react/24/outline';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -16,6 +20,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { path: '/', label: 'Dashboard', icon: HomeIcon },
     { path: '/generate', label: 'Gerar Rápido', icon: BoltIcon },
     { path: '/multiphase', label: 'Gerar Multi-Fase', icon: ChartBarIcon },
+    { path: '/cable', label: 'Dimensionar Cabos', icon: BeakerIcon },
+    { path: '/breaker', label: 'Disjuntor', icon: ScaleIcon },
+    { path: '/tools', label: 'Ferramentas', icon: WrenchScrewdriverIcon },
+    { path: '/panel', label: 'Painel', icon: Squares2X2Icon },
     { path: '/reports', label: 'Relatórios', icon: DocumentTextIcon },
     { path: '/parameters', label: 'Parâmetros', icon: CogIcon },
     { path: '/equipment', label: 'Equipamentos', icon: CircleStackIcon },
