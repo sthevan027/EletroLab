@@ -90,7 +90,7 @@ const GenerateReport: React.FC = () => {
     setShowNotification({ type, message });
   };
 
-  const handleInputChange = (field: keyof IRGenerationOptions, value: string | number) => {
+  const handleInputChange = (field: keyof IRGenerationOptions, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -552,7 +552,7 @@ const GenerateReport: React.FC = () => {
                     className="h-4 w-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                   />
                   <label htmlFor="shortLengthBoost" className="text-sm text-gray-300">
-                    Aplicar escala para cabos curtos (melhora valores < 100 m)
+                    Aplicar escala para cabos curtos (melhora valores {'<'} 100 m)
                   </label>
                 </div>
               </div>

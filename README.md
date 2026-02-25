@@ -48,18 +48,21 @@ Sistema para geração rápida de relatórios de Megger/IR no formato "cupom", c
 src/
 ├── components/          # Componentes React
 ├── pages/              # Páginas da aplicação
-│   ├── Dashboard.tsx
-│   ├── GenerateReport.tsx      # Geração simples
-│   └── GenerateMultiReport.tsx # Geração multi-fase com IA
 ├── utils/              # Utilitários
-│   ├── generator.ts           # Gerador básico
-│   ├── multi-generator.ts     # Gerador multi-fase
-│   ├── units.ts              # Formatação de unidades
-│   └── export.ts             # Exportação
-├── ai/                 # Sistema de IA
-│   ├── config-wizard.ts      # Assistente de configuração
-│   ├── phase-calculator.ts   # Cálculo de correlações
-│   └── validation.ts         # Validação inteligente
+│   ├── calculations/   # Funções puras de cálculo
+│   │   ├── megger.ts   # calculateMegger() - resistência de isolamento
+│   │   ├── cable.ts    # calculateCable(), calculateVoltageDrop()
+│   │   ├── breaker.ts  # calculateBreaker() - disjuntor
+│   │   ├── microhm.ts  # calculateMicrohm()
+│   │   └── hipot.ts    # calculateHipot()
+│   ├── norms.ts        # validateByNBR5410(), validateByIEC60364()
+│   ├── reports/        # Motores de relatório
+│   │   ├── megger.ts   # generateMeggerReport()
+│   │   ├── cable.ts    # generateCableReport()
+│   │   └── panel.ts    # generatePanelReport()
+│   ├── generator.ts    # Gerador IR com IA
+│   ├── units.ts        # Formatação de unidades
+│   └── export.ts       # Exportação PDF/CSV
 ├── db/                 # Banco de dados
 └── types/              # Tipos TypeScript
 ```

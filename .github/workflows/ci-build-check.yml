@@ -1,0 +1,297 @@
+name: "CI - Build & Lint Check"
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "tsconfig*.json"
+      - "vite.config.ts"
+      - "tailwind.config.js"
+      - "postcss.config.js"
+      - ".github/workflows/ci-build-check.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "tsconfig*.json"
+      - "vite.config.ts"
+      - "tailwind.config.js"
+      - "postcss.config.js"
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.typecheck.outcome }}
+      errors: ${{ steps.typecheck.outputs.errors }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Verificar tipos TypeScript
+        id: typecheck
+        continue-on-error: true
+        run: |
+          set +e
+          OUTPUT=$(pnpm exec tsc --noEmit 2>&1)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "errors<<$EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+          exit $EXIT_CODE
+
+  lint:
+    name: ESLint Check
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.lint.outcome }}
+      errors: ${{ steps.lint.outputs.errors }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Executar ESLint
+        id: lint
+        continue-on-error: true
+        run: |
+          set +e
+          OUTPUT=$(pnpm lint 2>&1)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "errors<<$EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+          exit $EXIT_CODE
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint]
+    if: always()
+    outputs:
+      status: ${{ steps.build.outcome }}
+      errors: ${{ steps.build.outputs.errors }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Build do projeto
+        id: build
+        continue-on-error: true
+        run: |
+          set +e
+          OUTPUT=$(pnpm build 2>&1)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "errors<<$EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+          exit $EXIT_CODE
+
+  report-issues:
+    name: Reportar Problemas
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint, build]
+    if: always() && (needs.typecheck.outputs.status == 'failure' || needs.lint.outputs.status == 'failure' || needs.build.outputs.status == 'failure')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gerar relatório de erros
+        id: report
+        run: |
+          BODY="## 🐛 CI - Erros Detectados\n\n"
+          BODY+="**Branch:** \`${{ github.ref_name }}\`\n"
+          BODY+="**Commit:** \`${{ github.sha }}\`\n"
+          BODY+="**Autor:** @${{ github.actor }}\n"
+          BODY+="**Workflow:** [Ver execução](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n"
+          BODY+="---\n\n"
+
+          if [ "${{ needs.typecheck.outputs.status }}" = "failure" ]; then
+            BODY+="### ❌ TypeScript - Erros de Tipo\n\n"
+            BODY+="\`\`\`\n${{ needs.typecheck.outputs.errors }}\n\`\`\`\n\n"
+          else
+            BODY+="### ✅ TypeScript - OK\n\n"
+          fi
+
+          if [ "${{ needs.lint.outputs.status }}" = "failure" ]; then
+            BODY+="### ❌ ESLint - Problemas de Código\n\n"
+            BODY+="\`\`\`\n${{ needs.lint.outputs.errors }}\n\`\`\`\n\n"
+          else
+            BODY+="### ✅ ESLint - OK\n\n"
+          fi
+
+          if [ "${{ needs.build.outputs.status }}" = "failure" ]; then
+            BODY+="### ❌ Build - Falha na Compilação\n\n"
+            BODY+="\`\`\`\n${{ needs.build.outputs.errors }}\n\`\`\`\n\n"
+          else
+            BODY+="### ✅ Build - OK\n\n"
+          fi
+
+          BODY+="---\n"
+          BODY+="**Ação necessária:** Corrigir os erros acima antes de fazer merge.\n"
+
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "body<<$EOF" >> $GITHUB_OUTPUT
+          echo -e "$BODY" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+      - name: Criar Issue de Bug
+        if: github.event_name == 'push'
+        env:
+          REPORT_BODY: ${{ toJSON(steps.report.outputs.body) }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = JSON.parse(process.env.REPORT_BODY);
+            const refName = '${{ github.ref_name }}';
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'bug,ci-automated'
+            });
+
+            const branchIssue = existingIssues.data.find(
+              i => i.title.includes(refName)
+            );
+
+            const title = `🐛 CI Falhou - Branch: ${refName} (${new Date().toISOString().split('T')[0]})`;
+
+            if (branchIssue) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: branchIssue.number,
+                body
+              });
+              console.log(`Issue #${branchIssue.number} atualizada`);
+            } else {
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['bug', 'ci-automated']
+              });
+              console.log(`Issue #${issue.data.number} criada`);
+            }
+
+      - name: Comentar no PR
+        if: github.event_name == 'pull_request'
+        env:
+          REPORT_BODY: ${{ toJSON(steps.report.outputs.body) }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = JSON.parse(process.env.REPORT_BODY);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+  ci-success:
+    name: CI Aprovado
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint, build]
+    if: always() && needs.typecheck.outputs.status == 'success' && needs.lint.outputs.status == 'success' && needs.build.outputs.status == 'success'
+    steps:
+      - name: Fechar issues automáticas antigas
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'bug,ci-automated'
+            });
+
+            const refName = '${{ github.ref_name }}';
+            for (const issue of issues.data) {
+              if (issue.title.includes(refName)) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed'
+                });
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: '✅ **CI passou com sucesso!** Erros foram corrigidos no commit `${{ github.sha }}`.'
+                });
+                console.log(`Issue #${issue.number} fechada automaticamente`);
+              }
+            }
+
+      - name: Status final
+        run: echo "✅ Todos os checks passaram com sucesso!"

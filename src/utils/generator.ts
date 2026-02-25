@@ -28,6 +28,7 @@ export interface IRGenerationOptions {
   insulationMaterial?: 'XLPE' | 'EPR' | 'PVC' | 'outro';
   conductorDiameter?: number;        // mm
   insulationThickness?: number;      // mm
+  shortLengthBoost?: boolean;       // aplica escala para cabos curtos (default: true)
 }
 
 /**
@@ -519,7 +520,6 @@ export async function generateMultiPhaseReport(
   const canUsePhysics =
     config.equipmentType === 'cabo' &&
     options.physicalOptions &&
-    options.physicalOptions.length > 0 &&
     options.physicalOptions.gauge > 0 &&
     !!options.physicalOptions.material;
 
@@ -603,8 +603,8 @@ export async function generateMultiPhaseReport(
           phase: comboIndex,
           time,
           resistance: formatResistance(value),
-          temperature,
-          humidity
+          temperature: options.environment?.temperature ?? context.environmentalFactors.temperature,
+          humidity: options.environment?.humidity ?? context.environmentalFactors.humidity
         });
         subReadings.push({ time, kv: '1.00', resistance: formatResistance(value) });
       });
@@ -654,8 +654,8 @@ export async function generateMultiPhaseReport(
         phase: phaseNames.length + phaseIndex, // Offset para fase/massa
         time,
         resistance: formatResistance(value),
-        temperature,
-        humidity
+        temperature: options.environment?.temperature ?? context.environmentalFactors.temperature,
+        humidity: options.environment?.humidity ?? context.environmentalFactors.humidity
       });
       subReadings.push({ time, kv: '1.00', resistance: formatResistance(value) });
     });
