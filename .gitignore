@@ -1,1 +1,7 @@
 node_modules
+
+# Environment (never commit secrets)
+.env
+.env.local
+.env.*.local
+
