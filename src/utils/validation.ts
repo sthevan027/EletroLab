@@ -60,7 +60,7 @@ export function validateTag(tag?: string): ValidationResult {
       type: 'format'
     });
   }
-  if (!/^[a-zA-Z0-9\-\_\s]+$/.test(tag)) {
+  if (!/^[a-zA-Z0-9\-_\s]+$/.test(tag)) {
     errors.push({ 
       field: 'tag', 
       message: 'Tag deve conter apenas letras, números, hífens e underscores',
@@ -536,7 +536,7 @@ export function validateReportNumber(number: string): ValidationResult {
     });
   }
   
-  if (!/^[A-Za-z0-9\-\_]+$/.test(number)) {
+  if (!/^[A-Za-z0-9\-_]+$/.test(number)) {
     errors.push({ 
       field: 'number', 
       message: 'Número do relatório deve conter apenas letras, números, hífens e underscores',
