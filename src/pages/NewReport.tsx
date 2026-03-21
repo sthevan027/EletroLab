@@ -95,7 +95,7 @@ export default function NewReport() {
     if (!selectedEquipment) return;
 
     try {
-      const config = await db.getConfiguration();
+      await db.getConfiguration();
       
       const randomValue = generateRandomTestValue();
       const result = classifyTest(randomValue);
@@ -143,7 +143,7 @@ export default function NewReport() {
       } as any);
 
       // Criar testes
-              const config = await db.getConfiguration();
+      await db.getConfiguration();
       for (const testForm of tests) {
         const selectedEquipment = equipment.find(e => String(e.id) === String(testForm.equipmentId));
         if (!selectedEquipment) continue;

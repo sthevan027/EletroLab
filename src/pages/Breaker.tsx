@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
-  BoltIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ScaleIcon

@@ -7,7 +7,7 @@ import {
   ExclamationTriangleIcon,
   CalculatorIcon
 } from '@heroicons/react/24/outline';
-import { calculateCable, type CableInput, type SystemType } from '../utils/calculations/cable';
+import { type CableInput, type SystemType } from '../utils/calculations/cable';
 import { generateCableReport } from '../utils/reports/cable';
 
 const Cable: React.FC = () => {

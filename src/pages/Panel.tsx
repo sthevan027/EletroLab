@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
-  BoltIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
   Squares2X2Icon
 } from '@heroicons/react/24/outline';
 import { generatePanelReport } from '../utils/reports/panel';

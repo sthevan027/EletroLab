@@ -22,21 +22,8 @@ import { dbUtils } from '../db/database';
 import { generateMultiPhaseReport } from '../utils/generator';
 import { exportMultiPhasePDF } from '../utils/export';
 
-interface PhaseConfig {
-  name: string;
-  combinations: string[][];
-  groundName: string;
-}
-
-interface GenerationResult {
-  report: MultiPhaseReport;
-  confidence: number;
-  warnings: string[];
-}
-
 const MultiPhase: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -64,7 +51,7 @@ const MultiPhase: React.FC = () => {
   const [aiConfidence, setAiConfidence] = useState<number>(0);
 
   // Perfis disponíveis
-  const [categoryProfiles, setCategoryProfiles] = useState<CategoryProfile[]>([]);
+  const [, setCategoryProfiles] = useState<CategoryProfile[]>([]);
 
   useEffect(() => {
     loadCategoryProfiles();

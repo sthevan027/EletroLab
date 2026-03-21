@@ -7,7 +7,7 @@ import { Category, CategoryProfile, IRReport, MultiPhaseConfig, MultiPhaseReport
 import { formatResistance, formatVoltage, getStandardTimeSeries, calculateDAI, parseResistance } from './units';
 import { calculateHybridResistance, formatResistance as formatResistancePhysics, applyTimeDecay, getInsulationConstant, estimateDiametersFromGauge, calculatePhysicalResistance, scaleResistanceForLength, applyEnvironmentalAdjustments } from './physics';
 import { dbUtils } from '../db/database';
-import { aiEngine, AIGenerationContext, AIGenerationResult } from './ai-engine';
+import { aiEngine, AIGenerationContext } from './ai-engine';
 
 /**
  * Opções para geração de série IR
@@ -63,10 +63,6 @@ export async function gerarSerieIR(opts: IRGenerationOptions): Promise<IRGenerat
     category,
     kv = 1.0,
     limitTOhm = 5,
-    tag,
-    client,
-    site,
-    operator,
     manufacturer,
     model
   } = opts;
@@ -208,6 +204,7 @@ function getDefaultProfile(category: Category): CategoryProfile {
 /**
  * Gera leituras baseadas no perfil da categoria
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reservado para uso futuro
 function generateReadingsFromProfile(
   profile: CategoryProfile,
   kv: number,
@@ -266,7 +263,7 @@ export async function generateIRReport(opts: IRGenerationOptions): Promise<IRRep
 export async function generateCorrelatedIRReports(
   baseOptions: IRGenerationOptions,
   count: number,
-  correlationFactor: number = 0.8
+  _correlationFactor: number = 0.8
 ): Promise<IRReport[]> {
   // Gerar relatório base
   const baseReport = await generateIRReport(baseOptions);
@@ -376,21 +373,21 @@ export async function learnFromHistory(
 ): Promise<void> {
   if (historicalValues.length === 0) return;
   
-  // Calcular médias e desvios
-  const averages = historicalValues[0].map((_, index) => {
+  // Calcular médias e desvios (para futura utilização no aprendizado)
+  const _averages = historicalValues[0].map((_, index) => {
     const values = historicalValues.map(row => row[index]);
     return values.reduce((sum, val) => sum + val, 0) / values.length;
   });
   
-  const correlations = historicalValues[0].map((_, index) => {
+  const _correlations = historicalValues[0].map((_, index) => {
     if (index === 0) return 1;
     const currentValues = historicalValues.map(row => row[index]);
     const previousValues = historicalValues.map(row => row[index - 1]);
-    
-    // Calcular correlação simples
     const correlation = calculateCorrelation(previousValues, currentValues);
     return correlation;
   });
+  void _averages;
+  void _correlations;
   
   // Salvar aprendizado
   await dbUtils.recordAILearning({
@@ -766,6 +763,7 @@ function applyEnvironmentalFactors(
 /**
  * Gera variação aleatória realística
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reservado para uso futuro
 function generateRandomVariation(baseValue: number, variationPercent: number = 5): number {
   const variation = (Math.random() - 0.5) * 2 * (variationPercent / 100);
   return baseValue * (1 + variation);

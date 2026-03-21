@@ -689,7 +689,7 @@ export function isPhysicalInputValid(inputs: Parameters<typeof validatePhysicalC
 }
 
 // === Helpers de compatibilidade ===
-export function validateEquipment(e: import('../types').Equipment) {
+export function validateEquipment(_e: import('../types').Equipment) {
   // Faça validação real depois; por ora só garante assinatura
   return { ok: true as const, errors: [] as string[] };
 }

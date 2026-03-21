@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeftIcon, 
@@ -20,14 +20,11 @@ import { generateIRSeries } from '../utils/generator';
 import { validateIRReport, validatePhysicalCableInputs } from '../utils/validation';
 import { calculateHybridResistance, formatResistance as physicsFormatResistance } from '../utils/physics';
 
-// Lazy load heavy components
-const AIInsights = lazy(() => import('../components/AIInsights'));
 import { exportCupomPDF } from '../utils/export';
 import { dbUtils } from '../db/database';
 
 const GenerateReport: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
