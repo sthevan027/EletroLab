@@ -6,9 +6,24 @@ import {
   BoltIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { calculateMicrohm } from '../utils/calculations/microhm';
 import { calculateHipot } from '../utils/calculations/hipot';
+import { exportMicrohmPDF, exportHipotPDF } from '../utils/export';
+import { exportMicrohmExcel, exportHipotExcel } from '../utils/export-excel';
+
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 const Tools: React.FC = () => {
   const navigate = useNavigate();
@@ -20,14 +35,18 @@ const Tools: React.FC = () => {
     current_A: 0.1,
     reference_Ohm: 0.01
   });
+  const [microhmMeta, setMicrohmMeta] = useState({ tag: '', client: '', operator: '' });
   const [microhmResult, setMicrohmResult] = useState<ReturnType<typeof calculateMicrohm> | null>(null);
+  const [microhmExporting, setMicrohmExporting] = useState(false);
 
   // Hipot state
   const [hipotInput, setHipotInput] = useState({
     nominalVoltage_V: 220,
     useIndustrialFormula: true
   });
+  const [hipotMeta, setHipotMeta] = useState({ tag: '', client: '', operator: '' });
   const [hipotResult, setHipotResult] = useState<ReturnType<typeof calculateHipot> | null>(null);
+  const [hipotExporting, setHipotExporting] = useState(false);
 
   const handleMicrohmCalc = () => {
     setMicrohmResult(calculateMicrohm(microhmInput));
@@ -36,6 +55,56 @@ const Tools: React.FC = () => {
   const handleHipotCalc = () => {
     setHipotResult(calculateHipot(hipotInput));
   };
+
+  const handleMicrohmPDF = async () => {
+    if (!microhmResult) return;
+    setMicrohmExporting(true);
+    try {
+      const blob = await exportMicrohmPDF({
+        ...microhmInput,
+        ...microhmResult,
+        ...microhmMeta,
+      });
+      triggerBlobDownload(blob, `relatorio_microhm_${new Date().toISOString().split('T')[0]}.pdf`);
+    } finally {
+      setMicrohmExporting(false);
+    }
+  };
+
+  const handleMicrohmExcel = () => {
+    if (!microhmResult) return;
+    exportMicrohmExcel({
+      ...microhmInput,
+      ...microhmResult,
+      ...microhmMeta,
+    });
+  };
+
+  const handleHipotPDF = async () => {
+    if (!hipotResult) return;
+    setHipotExporting(true);
+    try {
+      const blob = await exportHipotPDF({
+        ...hipotInput,
+        ...hipotResult,
+        ...hipotMeta,
+      });
+      triggerBlobDownload(blob, `relatorio_hipot_${new Date().toISOString().split('T')[0]}.pdf`);
+    } finally {
+      setHipotExporting(false);
+    }
+  };
+
+  const handleHipotExcel = () => {
+    if (!hipotResult) return;
+    exportHipotExcel({
+      ...hipotInput,
+      ...hipotResult,
+      ...hipotMeta,
+    });
+  };
+
+  const inputClass = "w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -81,6 +150,7 @@ const Tools: React.FC = () => {
           </button>
         </div>
 
+        {/* ========= MICROHM ========= */}
         {activeTab === 'microhm' && (
           <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-8">
             <div className="flex items-center mb-6">
@@ -102,7 +172,7 @@ const Tools: React.FC = () => {
                     step="0.01"
                     value={microhmInput.voltage_V}
                     onChange={(e) => setMicrohmInput(prev => ({ ...prev, voltage_V: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                 </div>
                 <div>
@@ -112,7 +182,7 @@ const Tools: React.FC = () => {
                     step="0.001"
                     value={microhmInput.current_A}
                     onChange={(e) => setMicrohmInput(prev => ({ ...prev, current_A: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                 </div>
                 <div>
@@ -122,9 +192,18 @@ const Tools: React.FC = () => {
                     step="0.0001"
                     value={microhmInput.reference_Ohm}
                     onChange={(e) => setMicrohmInput(prev => ({ ...prev, reference_Ohm: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                 </div>
+
+                {/* Metadata */}
+                <div className="border-t border-gray-700 pt-4 space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do Relatório (Opcional)</p>
+                  <input type="text" placeholder="Tag" value={microhmMeta.tag} onChange={(e) => setMicrohmMeta(p => ({ ...p, tag: e.target.value }))} className={inputClass} />
+                  <input type="text" placeholder="Cliente" value={microhmMeta.client} onChange={(e) => setMicrohmMeta(p => ({ ...p, client: e.target.value }))} className={inputClass} />
+                  <input type="text" placeholder="Operador" value={microhmMeta.operator} onChange={(e) => setMicrohmMeta(p => ({ ...p, operator: e.target.value }))} className={inputClass} />
+                </div>
+
                 <button
                   onClick={handleMicrohmCalc}
                   className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-colors"
@@ -157,6 +236,25 @@ const Tools: React.FC = () => {
                         Desvio aceitável
                       </div>
                     )}
+
+                    {/* Export buttons */}
+                    <div className="flex gap-3 pt-4 border-t border-gray-700">
+                      <button
+                        onClick={handleMicrohmPDF}
+                        disabled={microhmExporting}
+                        className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-colors flex items-center justify-center text-sm disabled:opacity-50"
+                      >
+                        {microhmExporting ? <ArrowPathIcon className="w-4 h-4 mr-1.5 animate-spin" /> : <ArrowDownTrayIcon className="w-4 h-4 mr-1.5" />}
+                        PDF
+                      </button>
+                      <button
+                        onClick={handleMicrohmExcel}
+                        className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-xl transition-colors flex items-center justify-center text-sm"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4 mr-1.5" />
+                        Excel
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-gray-500">
@@ -168,6 +266,7 @@ const Tools: React.FC = () => {
           </div>
         )}
 
+        {/* ========= HIPOT ========= */}
         {activeTab === 'hipot' && (
           <div className="bg-gray-800/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/20 p-8">
             <div className="flex items-center mb-6">
@@ -189,7 +288,7 @@ const Tools: React.FC = () => {
                     min="0"
                     value={hipotInput.nominalVoltage_V}
                     onChange={(e) => setHipotInput(prev => ({ ...prev, nominalVoltage_V: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={inputClass}
                   />
                 </div>
                 <div>
@@ -203,6 +302,15 @@ const Tools: React.FC = () => {
                     <span className="text-sm text-white">Usar fórmula industrial (2·V+1000)</span>
                   </label>
                 </div>
+
+                {/* Metadata */}
+                <div className="border-t border-gray-700 pt-4 space-y-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do Relatório (Opcional)</p>
+                  <input type="text" placeholder="Tag" value={hipotMeta.tag} onChange={(e) => setHipotMeta(p => ({ ...p, tag: e.target.value }))} className={inputClass} />
+                  <input type="text" placeholder="Cliente" value={hipotMeta.client} onChange={(e) => setHipotMeta(p => ({ ...p, client: e.target.value }))} className={inputClass} />
+                  <input type="text" placeholder="Operador" value={hipotMeta.operator} onChange={(e) => setHipotMeta(p => ({ ...p, operator: e.target.value }))} className={inputClass} />
+                </div>
+
                 <button
                   onClick={handleHipotCalc}
                   className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-xl transition-colors"
@@ -213,10 +321,31 @@ const Tools: React.FC = () => {
 
               <div>
                 {hipotResult ? (
-                  <div className="bg-gray-700/50 rounded-xl p-6 border border-gray-600">
-                    <p className="text-gray-400 text-sm mb-1">Tensão de Teste</p>
-                    <p className="text-3xl font-bold text-orange-400">{hipotResult.Vteste_V} V</p>
-                    <p className="text-gray-500 text-sm mt-2">Fórmula: {hipotResult.formulaUsed}</p>
+                  <div className="space-y-4">
+                    <div className="bg-gray-700/50 rounded-xl p-6 border border-gray-600">
+                      <p className="text-gray-400 text-sm mb-1">Tensão de Teste</p>
+                      <p className="text-3xl font-bold text-orange-400">{hipotResult.Vteste_V} V</p>
+                      <p className="text-gray-500 text-sm mt-2">Fórmula: {hipotResult.formulaUsed}</p>
+                    </div>
+
+                    {/* Export buttons */}
+                    <div className="flex gap-3 pt-4 border-t border-gray-700">
+                      <button
+                        onClick={handleHipotPDF}
+                        disabled={hipotExporting}
+                        className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-colors flex items-center justify-center text-sm disabled:opacity-50"
+                      >
+                        {hipotExporting ? <ArrowPathIcon className="w-4 h-4 mr-1.5 animate-spin" /> : <ArrowDownTrayIcon className="w-4 h-4 mr-1.5" />}
+                        PDF
+                      </button>
+                      <button
+                        onClick={handleHipotExcel}
+                        className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-xl transition-colors flex items-center justify-center text-sm"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4 mr-1.5" />
+                        Excel
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-gray-500">
