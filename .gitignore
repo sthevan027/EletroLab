@@ -5,3 +5,29 @@ node_modules
 .env.local
 .env.*.local
 
+# IDEs
+.vscode
+.idea   
+
+# Build
+dist
+build
+out
+.next
+.nuxt
+.vercel
+.output
+.turbo
+.vite
+.rollup.cache
+.eslintcache
+
+
+
+# Logs
+logs/
+
+
+# Configurações
+config
+

@@ -13,9 +13,12 @@ import { dbUtils } from '../db/database';
 import { cloud } from '../db/cloud';
 import { exportIRReport, exportMultiPhaseReport } from '../utils/export';
 
+type ModuleFilter = 'all' | 'megger' | 'microhm' | 'hipot' | 'cabo' | 'disjuntor' | 'multi';
+
 interface Report {
   id: string;
   type: 'ir' | 'multi';
+  module: ModuleFilter;
   title: string;
   createdAt: Date;
   equipment?: string;
@@ -23,11 +26,31 @@ interface Report {
   isSaved?: boolean;
 }
 
+const MODULE_LABELS: Record<ModuleFilter, string> = {
+  all: 'Todos',
+  megger: 'Megger',
+  microhm: 'Microhm',
+  hipot: 'Hi-Pot',
+  cabo: 'Cabo',
+  disjuntor: 'Disjuntor',
+  multi: 'Multi-Fase',
+};
+
+const MODULE_COLORS: Record<ModuleFilter, string> = {
+  all: 'bg-gray-500/20 text-gray-400',
+  megger: 'bg-blue-500/20 text-blue-400',
+  microhm: 'bg-purple-500/20 text-purple-400',
+  hipot: 'bg-orange-500/20 text-orange-400',
+  cabo: 'bg-cyan-500/20 text-cyan-400',
+  disjuntor: 'bg-amber-500/20 text-amber-400',
+  multi: 'bg-indigo-500/20 text-indigo-400',
+};
+
 const Reports: React.FC = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'ir' | 'multi'>('all');
+  const [filterModule, setFilterModule] = useState<ModuleFilter>('all');
 
   useEffect(() => {
     loadReports();
@@ -45,7 +68,8 @@ const Reports: React.FC = () => {
         ...localIR.map(r => ({
           id: r.id,
           type: 'ir' as const,
-          title: `${r.category || 'Sem Categoria'} - ${r.tag || 'Sem Tag'}`,
+          module: 'megger' as ModuleFilter,
+          title: `Megger - ${r.category?.toUpperCase() || 'Sem Categoria'} - ${r.tag || 'Sem Tag'}`,
           createdAt: r.createdAt,
           equipment: r.tag,
           category: r.category,
@@ -54,6 +78,7 @@ const Reports: React.FC = () => {
         ...localMulti.map(r => ({
           id: r.id,
           type: 'multi' as const,
+          module: 'multi' as ModuleFilter,
           title: `Multi-Fase - ${r.equipment?.model || 'Sem Modelo'}`,
           createdAt: r.createdAt,
           equipment: r.equipment?.model,
@@ -69,8 +94,9 @@ const Reports: React.FC = () => {
           const cloudFormatted = cloudReports.map((r: any) => ({
             id: r.id,
             type: r.type as 'ir' | 'multi',
+            module: (r.type === 'ir' ? 'megger' : 'multi') as ModuleFilter,
             title: r.type === 'ir' 
-              ? `${r.category || 'Sem Categoria'} - ${r.equipment || 'Sem Equipamento'}`
+              ? `Megger - ${r.category || 'Sem Categoria'} - ${r.equipment || 'Sem Equipamento'}`
               : `Multi-Fase - ${r.equipment?.model || 'Sem Modelo'}`,
             createdAt: r.createdAt?.toDate?.() || new Date(r.createdAt),
             equipment: r.type === 'ir' ? r.equipment : r.equipment?.model,
@@ -104,9 +130,9 @@ const Reports: React.FC = () => {
                          report.equipment?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          report.category?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = filterType === 'all' || report.type === filterType;
+    const matchesModule = filterModule === 'all' || report.module === filterModule;
     
-    return matchesSearch && matchesType;
+    return matchesSearch && matchesModule;
   });
 
   const handleExport = async (report: Report) => {
@@ -175,17 +201,23 @@ const Reports: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
 
-          {/* Type Filter */}
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as 'all' | 'ir' | 'multi')}
-            className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Todos os tipos</option>
-            <option value="ir">Relatórios IR</option>
-            <option value="multi">Multi-Fase</option>
-          </select>
+        {/* Module Filter Chips */}
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(MODULE_LABELS) as ModuleFilter[]).map((mod) => (
+            <button
+              key={mod}
+              onClick={() => setFilterModule(mod)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                filterModule === mod
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'
+              }`}
+            >
+              {MODULE_LABELS[mod]}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -196,7 +228,7 @@ const Reports: React.FC = () => {
             <DocumentTextIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-300 mb-2">Nenhum relatório encontrado</h3>
             <p className="text-gray-500">
-              {searchTerm || filterType !== 'all' 
+              {searchTerm || filterModule !== 'all' 
                 ? 'Tente ajustar os filtros de busca'
                 : 'Crie seu primeiro relatório para começar'
               }
@@ -209,15 +241,11 @@ const Reports: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     {/* Icon */}
-                    <div className={`p-3 rounded-lg ${
-                      report.type === 'ir' 
-                        ? 'bg-blue-500/20 text-blue-400' 
-                        : 'bg-purple-500/20 text-purple-400'
-                    }`}>
-                      {report.type === 'ir' ? (
-                        <DocumentTextIcon className="w-6 h-6" />
-                      ) : (
+                    <div className={`p-3 rounded-lg ${MODULE_COLORS[report.module] || MODULE_COLORS.all}`}>
+                      {report.type === 'multi' ? (
                         <ChartBarIcon className="w-6 h-6" />
+                      ) : (
+                        <DocumentTextIcon className="w-6 h-6" />
                       )}
                     </div>
 

@@ -117,7 +117,7 @@ const Dashboard: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-white">EletriLab</h1>
-          <p className="text-gray-400 mt-2 text-lg">Gerador de Relatórios Megger/IR com IA</p>
+          <p className="text-gray-400 mt-2 text-lg">Gerador de Relatórios de Qualidade Elétrica</p>
         </div>
         <div className="flex items-center space-x-2 text-green-400">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -176,114 +176,164 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* 5 Módulos de Relatório */}
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
         <div className="flex items-center space-x-2 mb-6">
           <BoltIcon className="w-6 h-6 text-yellow-400" />
-          <h2 className="text-xl font-semibold text-white">Ações Rápidas</h2>
+          <h2 className="text-xl font-semibold text-white">Módulos de Relatório</h2>
+          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full ml-2">PDF + Excel</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <Link
             to="/generate"
-            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+            className="p-5 bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl hover:from-blue-500/20 hover:to-blue-600/10 transition-all border-2 border-blue-500/30 hover:border-blue-400/50 hover:shadow-lg hover:shadow-blue-500/10"
           >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-500/20 rounded-lg">
-                <DocumentTextIcon className="w-6 h-6 text-blue-400" />
+            <div className="text-center">
+              <div className="p-3 bg-blue-500/20 rounded-xl inline-flex mb-3">
+                <DocumentTextIcon className="w-7 h-7 text-blue-400" />
               </div>
-              <div>
-                <h3 className="font-medium text-white">Gerar Rápido</h3>
-                <p className="text-sm text-gray-400">Relatório único sem salvar</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/multiphase"
-            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-purple-500/20 rounded-lg">
-                <ChartBarIcon className="w-6 h-6 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-white">Gerar Multi-Fase</h3>
-                <p className="text-sm text-gray-400">Múltiplos relatórios com IA</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/cable"
-            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-cyan-500/20 rounded-lg">
-                <CpuChipIcon className="w-6 h-6 text-cyan-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-white">Dimensionar Cabos</h3>
-                <p className="text-sm text-gray-400">Corrente, queda e seção</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/breaker"
-            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-500/20 rounded-lg">
-                <BoltIcon className="w-6 h-6 text-amber-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-white">Disjuntor</h3>
-                <p className="text-sm text-gray-400">Curva e coordenação</p>
+              <h3 className="font-bold text-white text-lg">Megger</h3>
+              <p className="text-sm text-gray-400 mt-1">Resistência de Isolamento</p>
+              <div className="flex gap-1 mt-3 justify-center">
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Colocar</span>
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Gerar</span>
               </div>
             </div>
           </Link>
 
           <Link
             to="/tools"
-            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+            className="p-5 bg-gradient-to-br from-purple-500/10 to-purple-600/5 rounded-xl hover:from-purple-500/20 hover:to-purple-600/10 transition-all border-2 border-purple-500/30 hover:border-purple-400/50 hover:shadow-lg hover:shadow-purple-500/10"
+          >
+            <div className="text-center">
+              <div className="p-3 bg-purple-500/20 rounded-xl inline-flex mb-3">
+                <CpuChipIcon className="w-7 h-7 text-purple-400" />
+              </div>
+              <h3 className="font-bold text-white text-lg">Microhm</h3>
+              <p className="text-sm text-gray-400 mt-1">Resistência de Contato</p>
+              <div className="flex gap-1 mt-3 justify-center">
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Calcular</span>
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">PDF/Excel</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/tools"
+            className="p-5 bg-gradient-to-br from-orange-500/10 to-orange-600/5 rounded-xl hover:from-orange-500/20 hover:to-orange-600/10 transition-all border-2 border-orange-500/30 hover:border-orange-400/50 hover:shadow-lg hover:shadow-orange-500/10"
+          >
+            <div className="text-center">
+              <div className="p-3 bg-orange-500/20 rounded-xl inline-flex mb-3">
+                <BoltIcon className="w-7 h-7 text-orange-400" />
+              </div>
+              <h3 className="font-bold text-white text-lg">Hi-Pot</h3>
+              <p className="text-sm text-gray-400 mt-1">Tensão de Teste</p>
+              <div className="flex gap-1 mt-3 justify-center">
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Calcular</span>
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">PDF/Excel</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/cable"
+            className="p-5 bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 rounded-xl hover:from-cyan-500/20 hover:to-cyan-600/10 transition-all border-2 border-cyan-500/30 hover:border-cyan-400/50 hover:shadow-lg hover:shadow-cyan-500/10"
+          >
+            <div className="text-center">
+              <div className="p-3 bg-cyan-500/20 rounded-xl inline-flex mb-3">
+                <ChartBarIcon className="w-7 h-7 text-cyan-400" />
+              </div>
+              <h3 className="font-bold text-white text-lg">Cabo</h3>
+              <p className="text-sm text-gray-400 mt-1">Lançamento de Cabo</p>
+              <div className="flex gap-1 mt-3 justify-center">
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Dimensionar</span>
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">PDF/Excel</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/breaker"
+            className="p-5 bg-gradient-to-br from-amber-500/10 to-amber-600/5 rounded-xl hover:from-amber-500/20 hover:to-amber-600/10 transition-all border-2 border-amber-500/30 hover:border-amber-400/50 hover:shadow-lg hover:shadow-amber-500/10"
+          >
+            <div className="text-center">
+              <div className="p-3 bg-amber-500/20 rounded-xl inline-flex mb-3">
+                <CogIcon className="w-7 h-7 text-amber-400" />
+              </div>
+              <h3 className="font-bold text-white text-lg">Disjuntor</h3>
+              <p className="text-sm text-gray-400 mt-1">Teste de DJs</p>
+              <div className="flex gap-1 mt-3 justify-center">
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">Calcular</span>
+                <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded">PDF/Excel</span>
+              </div>
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      {/* Outras Ações */}
+      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div className="flex items-center space-x-2 mb-4">
+          <CogIcon className="w-5 h-5 text-gray-400" />
+          <h2 className="text-lg font-semibold text-white">Mais</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            to="/multiphase"
+            className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
           >
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-orange-500/20 rounded-lg">
-                <CpuChipIcon className="w-6 h-6 text-orange-400" />
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <ChartBarIcon className="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Ferramentas</h3>
-                <p className="text-sm text-gray-400">Microhm e Hi-Pot</p>
+                <h3 className="font-medium text-white text-sm">Multi-Fase</h3>
+                <p className="text-xs text-gray-400">Megger multi-fase</p>
               </div>
             </div>
           </Link>
 
           <Link
             to="/panel"
-            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+            className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
           >
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-emerald-500/20 rounded-lg">
-                <ChartBarIcon className="w-6 h-6 text-emerald-400" />
+                <ChartBarIcon className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Painel</h3>
-                <p className="text-sm text-gray-400">Megger + Cabo + Hipot</p>
+                <h3 className="font-medium text-white text-sm">Painel</h3>
+                <p className="text-xs text-gray-400">Visão combinada</p>
               </div>
             </div>
           </Link>
 
           <Link
             to="/parameters"
-            className="p-6 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+            className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
           >
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gray-500/20 rounded-lg">
-                <CogIcon className="w-6 h-6 text-gray-400" />
+                <CogIcon className="w-5 h-5 text-gray-400" />
               </div>
               <div>
-                <h3 className="font-medium text-white">Parâmetros</h3>
-                <p className="text-sm text-gray-400">Configurar perfis e IA</p>
+                <h3 className="font-medium text-white text-sm">Parâmetros</h3>
+                <p className="text-xs text-gray-400">Perfis e IA</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/reports"
+            className="p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <DocumentTextIcon className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="font-medium text-white text-sm">Relatórios</h3>
+                <p className="text-xs text-gray-400">Ver todos salvos</p>
               </div>
             </div>
           </Link>

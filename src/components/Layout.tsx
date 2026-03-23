@@ -16,13 +16,15 @@ import {
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
 
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: HomeIcon },
-    { path: '/generate', label: 'Gerar Rápido', icon: BoltIcon },
-    { path: '/multiphase', label: 'Gerar Multi-Fase', icon: ChartBarIcon },
-    { path: '/cable', label: 'Dimensionar Cabos', icon: BeakerIcon },
+  const moduleItems = [
+    { path: '/generate', label: 'Megger', icon: BoltIcon },
+    { path: '/tools', label: 'Microhm / Hi-Pot', icon: WrenchScrewdriverIcon },
+    { path: '/cable', label: 'Cabo', icon: BeakerIcon },
     { path: '/breaker', label: 'Disjuntor', icon: ScaleIcon },
-    { path: '/tools', label: 'Ferramentas', icon: WrenchScrewdriverIcon },
+  ];
+
+  const otherItems = [
+    { path: '/multiphase', label: 'Multi-Fase', icon: ChartBarIcon },
     { path: '/panel', label: 'Painel', icon: Squares2X2Icon },
     { path: '/reports', label: 'Relatórios', icon: DocumentTextIcon },
     { path: '/parameters', label: 'Parâmetros', icon: CogIcon },
@@ -47,23 +49,59 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {navItems.map((item) => {
+          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            <Link
+              to="/"
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                location.pathname === '/'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              }`}
+            >
+              <HomeIcon className="w-5 h-5" />
+              <span className="font-medium">Dashboard</span>
+            </Link>
+
+            <div className="pt-4 pb-1 px-4">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Relatórios</span>
+            </div>
+            {moduleItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
-              
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-lg'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium text-sm">{item.label}</span>
+                </Link>
+              );
+            })}
+
+            <div className="pt-4 pb-1 px-4">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Sistema</span>
+            </div>
+            {otherItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium text-sm">{item.label}</span>
                 </Link>
               );
             })}
