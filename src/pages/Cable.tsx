@@ -5,10 +5,25 @@ import {
   BoltIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  CalculatorIcon
+  CalculatorIcon,
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { calculateCable, type CableInput, type SystemType } from '../utils/calculations/cable';
 import { generateCableReport } from '../utils/reports/cable';
+import { exportCablePDF } from '../utils/export';
+import { exportCableExcel } from '../utils/export-excel';
+
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 const Cable: React.FC = () => {
   const navigate = useNavigate();
@@ -21,8 +36,9 @@ const Cable: React.FC = () => {
     voltageDropPercent: 4,
     loadType: 'tomada'
   });
-
+  const [meta, setMeta] = useState({ tag: '', client: '', operator: '' });
   const [result, setResult] = useState<ReturnType<typeof generateCableReport> | null>(null);
+  const [pdfExporting, setPdfExporting] = useState(false);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -33,6 +49,47 @@ const Cable: React.FC = () => {
     const report = generateCableReport(formData);
     setResult(report);
   };
+
+  const buildExportData = () => {
+    if (!result) return null;
+    return {
+      power: formData.power,
+      voltage: formData.voltage,
+      powerFactor: formData.powerFactor,
+      systemType: formData.systemType,
+      distance: formData.distance,
+      voltageDropPercent: formData.voltageDropPercent,
+      current_A: result.cableResult.current_A,
+      minSection_mm2: result.cableResult.minSection_mm2,
+      resistance_Ohm: result.cableResult.resistance_Ohm,
+      actualDrop: result.cableResult.voltageDropPercent,
+      status: result.cableResult.status,
+      breakerIn: result.breakerResult?.In_A,
+      breakerCurve: result.breakerResult?.curve,
+      coordinationOk: result.breakerResult?.coordinationOk,
+      ...meta,
+    };
+  };
+
+  const handlePDF = async () => {
+    const data = buildExportData();
+    if (!data) return;
+    setPdfExporting(true);
+    try {
+      const blob = await exportCablePDF(data);
+      triggerBlobDownload(blob, `relatorio_cabo_${new Date().toISOString().split('T')[0]}.pdf`);
+    } finally {
+      setPdfExporting(false);
+    }
+  };
+
+  const handleExcel = () => {
+    const data = buildExportData();
+    if (!data) return;
+    exportCableExcel(data);
+  };
+
+  const inputClass = "w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -80,7 +137,7 @@ const Cable: React.FC = () => {
                   min="1"
                   value={formData.power}
                   onChange={(e) => handleInputChange('power', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                 />
               </div>
 
@@ -89,7 +146,7 @@ const Cable: React.FC = () => {
                 <select
                   value={formData.voltage}
                   onChange={(e) => handleInputChange('voltage', parseFloat(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                 >
                   <option value={127}>127</option>
                   <option value={220}>220</option>
@@ -107,7 +164,7 @@ const Cable: React.FC = () => {
                   max="1"
                   value={formData.powerFactor}
                   onChange={(e) => handleInputChange('powerFactor', parseFloat(e.target.value) || 0.92)}
-                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                 />
               </div>
 
@@ -116,7 +173,7 @@ const Cable: React.FC = () => {
                 <select
                   value={formData.systemType}
                   onChange={(e) => handleInputChange('systemType', e.target.value as SystemType)}
-                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                 >
                   <option value="monofasico">Monofásico</option>
                   <option value="trifasico">Trifásico</option>
@@ -130,7 +187,7 @@ const Cable: React.FC = () => {
                   min="1"
                   value={formData.distance}
                   onChange={(e) => handleInputChange('distance', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                 />
               </div>
 
@@ -143,7 +200,7 @@ const Cable: React.FC = () => {
                   max="10"
                   value={formData.voltageDropPercent}
                   onChange={(e) => handleInputChange('voltageDropPercent', parseFloat(e.target.value) || 4)}
-                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                 />
               </div>
 
@@ -152,12 +209,20 @@ const Cable: React.FC = () => {
                 <select
                   value={formData.loadType || 'tomada'}
                   onChange={(e) => handleInputChange('loadType', e.target.value as 'iluminacao' | 'tomada' | 'motor')}
-                  className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass}
                 >
                   <option value="iluminacao">Iluminação (Curva B)</option>
                   <option value="tomada">Tomada (Curva C)</option>
                   <option value="motor">Motor (Curva D)</option>
                 </select>
+              </div>
+
+              {/* Metadata */}
+              <div className="border-t border-gray-700 pt-4 space-y-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do Relatório (Opcional)</p>
+                <input type="text" placeholder="Tag" value={meta.tag} onChange={(e) => setMeta(p => ({ ...p, tag: e.target.value }))} className={inputClass} />
+                <input type="text" placeholder="Cliente" value={meta.client} onChange={(e) => setMeta(p => ({ ...p, client: e.target.value }))} className={inputClass} />
+                <input type="text" placeholder="Operador" value={meta.operator} onChange={(e) => setMeta(p => ({ ...p, operator: e.target.value }))} className={inputClass} />
               </div>
 
               <button
@@ -239,6 +304,25 @@ const Cable: React.FC = () => {
                     {result.validation.passed.join(' | ')}
                   </div>
                 )}
+
+                {/* Export buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-700">
+                  <button
+                    onClick={handlePDF}
+                    disabled={pdfExporting}
+                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-colors flex items-center justify-center disabled:opacity-50"
+                  >
+                    {pdfExporting ? <ArrowPathIcon className="w-5 h-5 mr-2 animate-spin" /> : <ArrowDownTrayIcon className="w-5 h-5 mr-2" />}
+                    Exportar PDF
+                  </button>
+                  <button
+                    onClick={handleExcel}
+                    className="flex-1 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-xl transition-colors flex items-center justify-center"
+                  >
+                    <ArrowDownTrayIcon className="w-5 h-5 mr-2" />
+                    Exportar Excel
+                  </button>
+                </div>
               </div>
             )}
           </div>
