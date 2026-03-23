@@ -23,7 +23,11 @@ import { calculateHybridResistance, formatResistance as physicsFormatResistance 
 // Lazy load heavy components
 const AIInsights = lazy(() => import('../components/AIInsights'));
 import { exportCupomPDF } from '../utils/export';
+import { exportMeggerExcel } from '../utils/export-excel';
 import { dbUtils } from '../db/database';
+import { formatResistance, calculateDAI, getStandardTimeSeries, formatVoltage } from '../utils/units';
+
+type InputMode = 'generate' | 'manual';
 
 const GenerateReport: React.FC = () => {
   const navigate = useNavigate();
@@ -32,7 +36,15 @@ const GenerateReport: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showNotification, setShowNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  
+  const [inputMode, setInputMode] = useState<InputMode>('generate');
+
+  const [manualReadings, setManualReadings] = useState([
+    { time: '00:15', kv: '1.00', resistance: '' },
+    { time: '00:30', kv: '1.00', resistance: '' },
+    { time: '00:45', kv: '1.00', resistance: '' },
+    { time: '01:00', kv: '1.00', resistance: '' },
+  ]);
+
   const [formData, setFormData] = useState<IRGenerationOptions>({
     category: 'cabo',
     kv: 1.00,
@@ -274,6 +286,62 @@ const GenerateReport: React.FC = () => {
     }
   };
 
+  const buildManualReport = () => {
+    const filled = manualReadings.every(r => r.resistance.trim() !== '');
+    if (!filled) {
+      setValidationErrors(['Preencha todas as 4 leituras de resistência']);
+      return;
+    }
+
+    const readings = manualReadings.map(r => ({
+      time: r.time,
+      kv: formatVoltage(formData.kv),
+      resistance: r.resistance.trim(),
+    }));
+
+    const dai = calculateDAI(readings);
+
+    const report: IRReport = {
+      id: `ir_${Date.now()}`,
+      category: formData.category,
+      tag: formData.tag || undefined,
+      kv: formData.kv,
+      client: formData.client || undefined,
+      site: formData.site || undefined,
+      operator: formData.operator || undefined,
+      manufacturer: formData.manufacturer || undefined,
+      model: formData.model || undefined,
+      readings,
+      dai,
+      createdAt: new Date(),
+      isSaved: false,
+    };
+
+    setGeneratedReport(report);
+    setValidationErrors([]);
+  };
+
+  const exportExcel = () => {
+    if (!generatedReport) return;
+    exportMeggerExcel(generatedReport);
+  };
+
+  const handleReadingChange = (index: number, value: string) => {
+    setManualReadings(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], resistance: value };
+      return copy;
+    });
+  };
+
+  const updateGeneratedReading = (index: number, value: string) => {
+    if (!generatedReport) return;
+    const newReadings = [...generatedReport.readings];
+    newReadings[index] = { ...newReadings[index], resistance: value };
+    const dai = calculateDAI(newReadings);
+    setGeneratedReport({ ...generatedReport, readings: newReadings, dai });
+  };
+
   const regenerateReport = () => {
     setGeneratedReport(null);
     generateReport();
@@ -361,6 +429,30 @@ const GenerateReport: React.FC = () => {
                   <p className="text-gray-400">Configure os parâmetros do teste</p>
                 </div>
               </div>
+
+            {/* Mode Toggle */}
+            <div className="mb-8 flex bg-gray-700 rounded-xl p-1">
+              <button
+                onClick={() => setInputMode('generate')}
+                className={`flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all ${
+                  inputMode === 'generate'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Gerar Valores
+              </button>
+              <button
+                onClick={() => setInputMode('manual')}
+                className={`flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all ${
+                  inputMode === 'manual'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Colocar Valores
+              </button>
+            </div>
 
             {/* Categoria */}
             <div className="mb-8">
@@ -682,16 +774,45 @@ const GenerateReport: React.FC = () => {
               </div>
             </div>
 
-            {/* Botão Gerar */}
+            {/* Manual Readings (Colocar Valores) */}
+            {inputMode === 'manual' && (
+              <div className="mb-6 mt-6">
+                <label className="flex text-sm font-semibold text-gray-200 mb-4 items-center">
+                  <BoltIcon className="w-4 h-4 mr-2 text-blue-400" />
+                  Leituras de Resistência (Manual)
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  {manualReadings.map((reading, i) => (
+                    <div key={reading.time}>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">{reading.time}</label>
+                      <input
+                        type="text"
+                        value={reading.resistance}
+                        onChange={(e) => handleReadingChange(i, e.target.value)}
+                        placeholder="Ex: 5.23GΩ"
+                        className="w-full px-4 py-3 bg-gray-700 border-2 border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Botão Gerar / Criar Relatório */}
             <button
-              onClick={generateReport}
-              disabled={generating || (isPhysicsMode && !isPhysicsReady)}
+              onClick={inputMode === 'generate' ? generateReport : buildManualReport}
+              disabled={generating || (inputMode === 'generate' && isPhysicsMode && !isPhysicsReady)}
               className="w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
             >
               {generating ? (
                 <>
                   <ArrowPathIcon className="w-6 h-6 mr-3 animate-spin" />
                   Gerando com IA...
+                </>
+              ) : inputMode === 'manual' ? (
+                <>
+                  <DocumentCheckIcon className="w-6 h-6 mr-3" />
+                  Criar Relatório
                 </>
               ) : (
                 <>
@@ -816,7 +937,12 @@ const GenerateReport: React.FC = () => {
                               {reading.kv}
                             </td>
                             <td className="px-4 py-3 text-sm font-mono text-gray-200">
-                              {reading.resistance}
+                              <input
+                                type="text"
+                                value={reading.resistance}
+                                onChange={(e) => updateGeneratedReading(index, e.target.value)}
+                                className="bg-transparent border-b border-gray-600 text-gray-200 font-mono focus:outline-none focus:border-blue-500 w-full"
+                              />
                             </td>
                           </tr>
                         ))}
@@ -874,6 +1000,14 @@ const GenerateReport: React.FC = () => {
                         Exportar PDF
                       </>
                     )}
+                  </button>
+
+                  <button
+                    onClick={exportExcel}
+                    className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-6 rounded-xl hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 flex items-center justify-center font-semibold transition-all duration-200 hover:scale-[1.02]"
+                  >
+                    <ArrowDownTrayIcon className="w-5 h-5 mr-2" />
+                    Exportar Excel
                   </button>
                 </div>
               </div>
