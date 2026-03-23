@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { IRReport, MultiPhaseReport } from '../types';
+import { IRReport } from '../types';
 
 function downloadExcel(wb: XLSX.WorkBook, filename: string) {
   const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });

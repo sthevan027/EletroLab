@@ -57,7 +57,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Verificar tipos TypeScript
         id: typecheck
@@ -95,7 +95,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Executar ESLint
         id: lint
@@ -135,7 +135,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Instalar dependências
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Build do projeto
         id: build
