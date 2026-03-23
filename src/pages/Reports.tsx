@@ -173,46 +173,40 @@ const Reports: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Relatórios</h1>
-          <p className="text-gray-400 mt-1">Visualize e gerencie todos os relatórios salvos</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Relatórios</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Visualize e gerencie todos os relatórios salvos</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-400">
-            {filteredReports.length} de {reports.length} relatórios
-          </div>
-        </div>
+        <span className="text-xs text-gray-600 bg-gray-900 border border-gray-800 px-2.5 py-1 rounded-full">
+          {filteredReports.length} de {reports.length}
+        </span>
       </div>
 
       {/* Filters */}
-      <div className="bg-gray-800 rounded-lg p-4 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar por equipamento, categoria..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+      <div className="bg-gray-900 rounded-xl border border-gray-800 p-4 space-y-3">
+        <div className="relative">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+          <input
+            type="text"
+            placeholder="Buscar por equipamento, categoria..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 bg-gray-950 border border-gray-800 rounded-lg text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-600"
+          />
         </div>
 
-        {/* Module Filter Chips */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {(Object.keys(MODULE_LABELS) as ModuleFilter[]).map((mod) => (
             <button
               key={mod}
               onClick={() => setFilterModule(mod)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
                 filterModule === mod
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                  : 'bg-gray-950/50 text-gray-500 border-gray-800 hover:border-gray-700 hover:text-gray-300'
               }`}
             >
               {MODULE_LABELS[mod]}
@@ -222,73 +216,66 @@ const Reports: React.FC = () => {
       </div>
 
       {/* Reports List */}
-      <div className="bg-gray-800 rounded-lg overflow-hidden">
+      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
         {filteredReports.length === 0 ? (
-          <div className="p-8 text-center">
-            <DocumentTextIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-300 mb-2">Nenhum relatório encontrado</h3>
-            <p className="text-gray-500">
-              {searchTerm || filterModule !== 'all' 
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center mb-3">
+              <DocumentTextIcon className="w-6 h-6 text-gray-600" />
+            </div>
+            <p className="text-sm font-medium text-gray-400 mb-1">Nenhum relatório encontrado</p>
+            <p className="text-xs text-gray-600">
+              {searchTerm || filterModule !== 'all'
                 ? 'Tente ajustar os filtros de busca'
-                : 'Crie seu primeiro relatório para começar'
+                : 'Gere o seu primeiro relatório para começar'
               }
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-700">
+          <div className="divide-y divide-gray-800/60">
             {filteredReports.map((report) => (
-                             <div key={report.id} className="p-6 hover:bg-gray-700 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    {/* Icon */}
-                    <div className={`p-3 rounded-lg ${MODULE_COLORS[report.module] || MODULE_COLORS.all}`}>
-                      {report.type === 'multi' ? (
-                        <ChartBarIcon className="w-6 h-6" />
-                      ) : (
-                        <DocumentTextIcon className="w-6 h-6" />
+              <div key={report.id} className="flex items-center justify-between p-4 hover:bg-gray-800/30 transition-colors group">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`p-2 rounded-lg flex-shrink-0 ${MODULE_COLORS[report.module] || MODULE_COLORS.all}`}>
+                    {report.type === 'multi' ? (
+                      <ChartBarIcon className="w-4 h-4" />
+                    ) : (
+                      <DocumentTextIcon className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-200 truncate group-hover:text-white">{report.title}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <CalendarIcon className="w-3 h-3" />
+                        <span>{formatDate(report.createdAt)}</span>
+                      </div>
+                      {report.equipment && (
+                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                          <TagIcon className="w-3 h-3" />
+                          <span className="truncate max-w-[100px]">{report.equipment}</span>
+                        </div>
+                      )}
+                      {report.isSaved && (
+                        <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-medium">
+                          Salvo
+                        </span>
                       )}
                     </div>
-
-                    {/* Info */}
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium text-white">{report.title}</h3>
-                      <div className="flex items-center space-x-4 mt-1 text-sm text-gray-400">
-                        <div className="flex items-center space-x-1">
-                          <CalendarIcon className="w-4 h-4" />
-                          <span>{formatDate(report.createdAt)}</span>
-                        </div>
-                        {report.equipment && (
-                          <div className="flex items-center space-x-1">
-                            <TagIcon className="w-4 h-4" />
-                            <span>{report.equipment}</span>
-                          </div>
-                        )}
-                        {report.isSaved && (
-                          <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                            Salvo
-                          </span>
-                        )}
-                      </div>
-                    </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center space-x-2">
-                    <Link
-                      to={`/report/${report.type}/${report.id}`}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                      title="Visualizar"
-                    >
-                      <EyeIcon className="w-5 h-5" />
-                    </Link>
-                    <button
-                      onClick={() => handleExport(report)}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                      title="Exportar"
-                    >
-                      <ArrowDownTrayIcon className="w-5 h-5" />
-                    </button>
-                  </div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0 ml-3">
+                  <Link
+                    to={`/report/${report.type}/${report.id}`}
+                    className="p-1.5 text-gray-600 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    <EyeIcon className="w-4 h-4" />
+                  </Link>
+                  <button
+                    onClick={() => handleExport(report)}
+                    className="p-1.5 text-gray-600 hover:text-gray-200 hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    <ArrowDownTrayIcon className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}

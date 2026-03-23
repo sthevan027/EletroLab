@@ -1,7 +1,7 @@
 {
   "name": "EletriLab - Sistema de Ensaios Elétricos",
   "short_name": "EletriLab",
-  "description": "Sistema completo para gerenciamento de ensaios elétricos, relatórios e equipamentos",
+  "description": "Gerador de relatórios de qualidade elétrica: Megger, Microhm, Hipot, Cabo, Disjuntor. PDF e Excel.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1f2937",
