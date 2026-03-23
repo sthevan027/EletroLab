@@ -1,5 +1,7 @@
 # EletriLab — Atualização Ultra-MVP Revisada
 
+> **Nota:** Este documento refere-se à versão Ultra-MVP anterior. Para a versão atual (Gerador de Relatórios de Qualidade Elétrica), consulte `atualizacao-relatorios-qualidade.md`.
+
 ## 📋 Resumo das Mudanças
 
 Esta atualização transforma o EletriLab de um sistema complexo de gestão de relatórios para um gerador rápido de relatórios Megger/IR no formato "cupom", com foco em simulação e ensaio rápido.

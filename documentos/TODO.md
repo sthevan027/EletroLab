@@ -1,91 +1,72 @@
-# TODO - EletriLab
+# TODO - EletriLab - Gerador de Relatórios de Qualidade Elétrica
 
-## 🚀 Próximas Implementações
+## Visão da Nova Versão
 
-### Interface e Design
-- [x] Melhorar contraste do texto (já implementado)
-- [x] Implementar tema escuro/cinza (todas as páginas principais)
-- [x] Adicionar "Gerar Multi-Fase" na barra lateral
-- [ ] Criar página de visualização de relatórios
-- [ ] Adicionar botão para abrir relatórios gerados
-- [ ] Melhorar design geral do site
+O EletriLab está sendo transformado em um gerador de relatórios de qualidade da disciplina elétrica, com suporte a **entrada manual** e **cálculo automático** em todos os tipos, e exportação **PDF e Excel**.
 
-### Funcionalidades de Relatórios
-- [x] Implementar geração de relatórios Multi-Fase
-- [x] Salvar relatórios localmente (IndexedDB)
-- [x] Integração com Firebase para sincronização
-- [ ] Visualização detalhada de relatórios salvos
-- [ ] Histórico completo de relatórios
-- [ ] Filtros por tipo de relatório (IR, Multi-Fase)
-- [ ] Busca por equipamento ou data
-- [ ] Exibir insights da IA no Preview (novo)
+## Próximas Implementações (por PR)
 
-### Sincronização e Nuvem
-- [x] Configuração básica do Firebase
-- [x] Sincronização automática de relatórios
-- [ ] Interface para gerenciar sincronização
-- [ ] Autenticação de usuários
-- [ ] Backup/restore de dados
-- [ ] Migração de dados locais para nuvem
+### PR 1: Infraestrutura Excel
+- [ ] Adicionar dependência xlsx ou exceljs
+- [ ] Criar src/utils/export-excel.ts
+- [ ] Megger: leituras editáveis + export Excel
 
-### IA e Automação
-- [x] Sistema de aprendizado de IA
-- [x] Melhorar algoritmos de geração (motor IA avançado, clustering, regressão, anomalias)
-- [x] Sugestões automáticas baseadas em histórico (recomendações do motor IA)
-- [x] Análise de tendências nos dados (regressão linear com R²)
-- [ ] Integrar componente AIInsights nas telas (GenerateReport/MultiPhase)
+### PR 2: Documentos de Referência
+- [ ] Criar documentos/referencias/
+- [ ] README com formato esperado (PDF, XLSX)
 
-### Parâmetros e Configuração
-- [ ] Interface para configurar Firebase
-- [x] Perfis de equipamento personalizáveis (CRUD de perfis por categoria)
-- [ ] Configurações de exportação
-- [ ] Preferências de usuário
+### PR 3: Relatório Microhmímetro
+- [ ] generateMicrohmReport()
+- [ ] Campos para entrada manual (V, I, R_ref)
+- [ ] Botão Gerar Relatório + PDF + Excel
 
-### Exportação e Relatórios
-- [x] Exportação para PDF
-- [x] Exportação para CSV
-- [ ] Templates personalizáveis
-- [ ] Relatórios em lote
-- [ ] Envio por email
+### PR 4: Relatório Hipot
+- [ ] generateHipotReport()
+- [ ] Campos para entrada manual (Vnominal, Vteste)
+- [ ] Botão Gerar Relatório + PDF + Excel
 
-### Equipamentos
-- [x] CRUD de equipamentos
-- [ ] Categorização automática
-- [ ] Histórico de manutenção
-- [ ] Alertas de manutenção
+### PR 5: Relatório Cabo (PDF/Excel)
+- [ ] Garantir entrada manual de valores
+- [ ] Botões Exportar PDF e Export Excel
 
-### Performance e UX
-- [ ] Loading states melhorados
-- [ ] Offline mode completo
-- [ ] PWA (Progressive Web App)
-- [ ] Notificações push
-- [ ] Atalhos de teclado
-- [ ] Code-splitting para reduzir bundle (novo)
+### PR 6: Relatório Disjuntor
+- [ ] generateBreakerReport()
+- [ ] Campos para entrada manual
+- [ ] Botão Gerar Relatório + PDF + Excel
 
-### Segurança
-- [ ] Autenticação de usuários
-- [ ] Criptografia de dados sensíveis
-- [ ] Backup automático
-- [ ] Logs de auditoria
+### PR 7: Unificação
+- [ ] Rebranding "Relatórios de Qualidade"
+- [ ] Dashboard e navegação atualizados
+- [ ] Reports com filtro por tipo
 
-### Testes e Qualidade
-- [ ] Testes unitários
-- [ ] Testes de integração
+### PR 8: Banco de Dados
+- [ ] Tabela qualityReports ou extensão
+- [ ] Migração de dados
+
+## Interface e Design
+- [x] Tema escuro/cinza
+- [x] Gerar Multi-Fase
+- [ ] Página de visualização unificada de relatórios
+- [ ] Filtros por tipo (Megger, Microhm, Hipot, Cabo, Disjuntor)
+
+## Exportação
+- [x] PDF (Megger, Multi-Fase)
+- [ ] Excel (todos os tipos)
+- [ ] Exportação em lote (PDF/Excel)
+
+## Testes e Qualidade
+- [ ] Testes unitários (cálculos)
+- [ ] Testes de integração (fluxos)
 - [ ] Testes E2E
-- [ ] Validação de dados melhorada
+- [ ] Validação entrada manual vs. automática
 
-## 🐛 Bugs Conhecidos
-- Nenhum bug crítico identificado
+## Ideias Futuras
+- [ ] Integração com documentos de referência (PDF/Excel) para treinamento
+- [ ] Templates personalizáveis
+- [ ] App mobile
+- [ ] API REST
 
-## 💡 Ideias Futuras
-- [ ] App mobile (React Native)
-- [ ] Integração com sistemas externos
-- [ ] API REST para integrações
-- [ ] Dashboard avançado com gráficos
-- [ ] Relatórios comparativos
-- [ ] Sistema de alertas inteligentes
-
-## 📝 Notas
-- Priorizar funcionalidades de visualização e navegação
-- Manter foco na usabilidade e simplicidade
-- Considerar feedback dos usuários para novas features
+## Notas
+- Priorizar entrada manual em todos os formulários
+- Manter cálculo automático como opção de preenchimento
+- Exportação PDF e Excel para todos os tipos

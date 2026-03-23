@@ -1,8 +1,8 @@
-# Regras de Validação - EletriLab Ultra-MVP com IA
+# Regras de Validação - EletriLab - Gerador de Relatórios de Qualidade Elétrica
 
 ## Visão Geral
 
-O sistema EletriLab Ultra-MVP com IA implementa validações flexíveis e inteligentes para geração de relatórios Megger/IR, incluindo suporte a geração multi-fase e validação com correlações.
+O sistema EletriLab implementa validações flexíveis para todos os tipos de relatório de qualidade: Megger/IR, Microhmímetro, Hipot, Lançamento de Cabo e Testes de Disjuntor. Suporta entrada manual de valores e cálculo automático, com validação de ambos os modos.
 
 ## Princípios de Validação
 
@@ -437,6 +437,27 @@ function validateAIConfidence(
 }
 ```
 
+## Validações de Entrada Manual
+
+Todos os relatórios aceitam valores inseridos manualmente pelo usuário. As validações devem aplicar-se tanto a valores calculados quanto a valores digitados.
+
+### Microhm (Entrada Manual)
+- **V, I, R_ref:** Valores numéricos positivos; R = V/I deve ser calculável
+- **R medido direto:** Se o usuário informar R em vez de V/I, validar range esperado (μΩ a Ω)
+
+### Hipot (Entrada Manual)
+- **Vnominal:** 0 a 5000 V
+- **Vteste:** Deve ser ≥ 500 V para Vnom > 0; ou usuário pode sobrescrever com valor aplicado
+
+### Cabo (Entrada Manual)
+- **Potência, tensão, distância:** Valores positivos
+- **Seção escolhida:** Valores padrão (1.5, 2.5, 4, 6, 10... mm²)
+- **Queda medida:** Percentual 0-100%
+
+### Disjuntor (Entrada Manual)
+- **Icarga, In, Icabo:** Valores positivos em A
+- **Coordenação:** Alertar se In > Icabo (NBR 5410)
+
 ## Validações de Exportação
 
 ### PDF
@@ -456,6 +477,20 @@ function validatePDFExport(report: IRReport | MultiPhaseReport): ValidationResul
   
   if ('reports' in report && (!report.reports || report.reports.length === 0)) {
     errors.push({ field: 'reports', message: 'Relatório multi-fase deve ter sub-relatórios' });
+  }
+  
+  return { isValid: errors.length === 0, errors };
+}
+```
+
+### Excel
+```typescript
+// Validação para exportação Excel
+function validateExcelExport(report: QualityReport): ValidationResult {
+  const errors: ValidationError[] = [];
+  
+  if (!report || !report.data) {
+    errors.push({ field: 'report', message: 'Relatório é obrigatório para exportação Excel' });
   }
   
   return { isValid: errors.length === 0, errors };

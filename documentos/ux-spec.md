@@ -1,8 +1,8 @@
-# Especificação de UX - EletriLab Ultra-MVP com IA
+# Especificação de UX - EletriLab - Gerador de Relatórios de Qualidade Elétrica
 
 ## Visão Geral
 
-O EletriLab Ultra-MVP com IA oferece uma experiência de usuário simplificada e inteligente para geração de relatórios Megger/IR, com suporte a geração multi-fase e assistente de configuração.
+O EletriLab oferece uma experiência de usuário unificada para geração de relatórios de qualidade elétrica: Megger, Microhmímetro, Hipot, Lançamento de Cabo e Testes de Disjuntor. Em todos os formulários, o usuário pode **inserir valores manualmente** (teste real) ou usar **cálculo automático** (simulação/estudo), com exportação em PDF e Excel.
 
 ## Princípios de Design
 
@@ -27,9 +27,9 @@ O EletriLab Ultra-MVP com IA oferece uma experiência de usuário simplificada e
 - **Aprendizado**: Interface adapta-se ao uso do usuário
 
 ### Flexibilidade
-- **Múltiplos modos**: Geração simples e multi-fase
-- **Configuração personalizada**: Fases e combinações flexíveis
-- **Exportação variada**: PDF e CSV para diferentes necessidades
+- **Entrada manual ou automática**: Usuário digita valores OU usa cálculo em todos os relatórios
+- **Múltiplos modos**: Megger simples, multi-fase, Microhm, Hipot, Cabo, Disjuntor
+- **Exportação variada**: PDF e Excel para todos os tipos
 
 ## Fluxo de Usuário
 
@@ -40,7 +40,7 @@ O EletriLab Ultra-MVP com IA oferece uma experiência de usuário simplificada e
 **Layout**:
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ EletriLab - Gerador de Relatórios Megger/IR            │
+│ EletriLab - Relatórios de Qualidade Elétrica           │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │  📊 KPIs Principais                                     │
@@ -107,14 +107,16 @@ O EletriLab Ultra-MVP com IA oferece uma experiência de usuário simplificada e
    │                                     │
    │ DAI: 1.29                           │
    │                                     │
-   │ [Exportar PDF] [Exportar CSV]       │
+   │ [Exportar PDF] [Exportar Excel]     │
    └─────────────────────────────────────┘
 ```
 
 **Características**:
+- **Entrada manual**: Leituras (00:15, 00:30, 00:45, 01:00) editáveis após "Gerar Valores"
+- **Cálculo automático**: Botão "Gerar Valores" preenche com IA
 - **Formulário mínimo**: Apenas campos essenciais
 - **Preview imediato**: Visualização instantânea do resultado
-- **Exportação rápida**: PDF e CSV sem salvamento
+- **Exportação**: PDF e Excel
 - **Validação em tempo real**: Feedback imediato de erros
 
 ### 3. Geração Multi-Fase com IA
@@ -591,6 +593,16 @@ O EletriLab Ultra-MVP com IA oferece uma experiência de usuário simplificada e
 }
 ```
 
+## Padrão: Entrada Manual + Cálculo Automático
+
+Em **todos** os formulários de relatório (Megger, Microhm, Hipot, Cabo, Disjuntor):
+
+1. **Campos editáveis:** Usuário pode digitar valores manualmente
+2. **Botão "Calcular" (opcional):** Sistema preenche com valores calculados
+3. **Preview:** Mostra o resultado com os valores atuais
+4. **Gerar Relatório:** Usa os valores do formulário (manuais ou calculados)
+5. **Exportar:** PDF e Excel
+
 ---
 
-**Nota**: Esta especificação de UX garante uma experiência consistente e intuitiva, com foco na eficiência e na inteligência do sistema.
+**Nota**: Esta especificação de UX garante uma experiência consistente e intuitiva, com foco na flexibilidade (entrada manual ou automática) e na exportação em PDF e Excel.

@@ -1,144 +1,72 @@
-# EletriLab - Gerador Rápido de Relatórios Megger/IR
+# EletriLab - Gerador de Relatórios de Qualidade da Disciplina Elétrica
 
-Sistema para geração rápida de relatórios de Megger/IR no formato "cupom", com suporte a simulação e histórico local.
+Sistema para geração de relatórios de qualidade elétrica: Megger, Microhmímetro, Hipot, Lançamento de Cabo e Testes de Disjuntor. Suporta **entrada manual de valores** (dados reais do teste) e **cálculo automático** (simulação/estudo), com exportação em **PDF e Excel**.
+
+## Tipos de Relatório
+
+| Tipo | Descrição | Entrada Manual | Cálculo Automático |
+|------|-----------|----------------|-------------------|
+| **Megger** | Resistência de isolamento (IR) | Leituras 00:15, 00:30, 00:45, 01:00 editáveis | IA gera valores correlacionados |
+| **Microhmímetro** | Teste de resistência de contato (R=V/I) | V, I, R_ref ou R medido | Sistema calcula e detecta mau contato |
+| **Hipot** | Tensão de teste de isolamento | Vnominal, Vteste aplicado | Fórmula 2·V+1000 ou 1.5·V |
+| **Lançamento de Cabo** | Dimensionamento (corrente, queda, seção) | Potência, distância, seção | NBR5410, ampacidade |
+| **Testes de Disjuntor (DJ)** | Coordenação e curva | Icarga, In, Icabo | Sugere disjuntor conforme curva B/C/D |
+
+## Duas Formas de Entrada
+
+Em **todos** os relatórios:
+
+- **Modo Manual:** Usuário digita os valores medidos no equipamento (teste real em campo)
+- **Modo Automático:** Botão "Calcular" preenche valores (estudo, prática, demonstração)
+- **Gerar Relatório:** Usa os valores do formulário (manuais ou calculados)
 
 ## Funcionalidades
 
-### Geração Rápida
-- **Modo Simulação**: Gera relatórios sem salvar para testes rápidos
-- **Modo Histórico**: Salva relatórios no IndexedDB para consulta posterior
-- **Geração Multi-Fase**: Cria múltiplos relatórios para fase/fase e fase/massa automaticamente
-- **Configuração Flexível**: Permite personalizar nomes das fases (R,S,T ou A,B,C, etc.)
-
-### Geração Inteligente com IA
-- **Assistente de Configuração**: Interface passo a passo para configuração de testes
-- **Fases Personalizáveis**: Usuário define nomes das fases (R,S,T, L1,L2,L3, etc.)
-- **Combinações Flexíveis**: Escolha quais combinações fase/fase testar
-- **Valores Correlacionados**: IA gera valores realistas e correlacionados entre fases
-- **Comentários Automáticos**: Identifica tipo de teste (Fase/Fase, Fase/Massa)
-
-### Escala Automática
-- **Formatação Inteligente**: Ω → kΩ → MΩ → GΩ → TΩ automaticamente
-- **OVRG**: Exibe "0.99 OVRG" quando resistência ≥ 5 TΩ
-- **DAI**: Calcula R60/R30 ou "Undefined" se houver OVRG
-
-### Perfis por Categoria
-- **Cabo**: Sempre ≥ 5 GΩ, crescimento 1.05-1.18
-- **Motor**: Base 1-5 GΩ, crescimento 1.03-1.12
-- **Bomba**: Base 1-5 GΩ, crescimento 1.03-1.12
-- **Trafo**: Base 10-50 GΩ, crescimento 1.05-1.18
-- **Outro**: Base 0.5-5 GΩ, crescimento 1.02-1.10
+### Geração de Relatórios
+- **Megger/IR:** Série 00:15, 00:30, 00:45, 01:00 | DAI | OVRG | Multi-fase com IA
+- **Microhmímetro:** R=V/I | Detecção de mau contato (desvio > 50%)
+- **Hipot:** Vteste = 2·Vnom+1000 ou 1.5·Vnom
+- **Cabo:** Corrente, queda de tensão, seção mínima, disjuntor sugerido
+- **Disjuntor:** In ≥ Icarga | Idj ≤ Icabo | Curvas B, C, D
 
 ### Exportação
-- **PDF**: Formato A7 portrait estilo cupom
-- **CSV**: Dados estruturados para análise
-- **Multi-Export**: Exporta todos os relatórios de uma vez
+- **PDF:** Formato A7 (cupom) para Megger/IR; A4 para demais
+- **Excel:** Planilha estruturada para análise e arquivamento
+- **Multi-Export:** Exporta todos os relatórios de uma vez
+
+### Persistência
+- **IndexedDB:** Histórico local de relatórios
+- **Firebase:** Sincronização opcional (variáveis `VITE_FB_*`)
 
 ## Tecnologias
 
-- **Frontend**: React 19 + Vite + TypeScript
-- **Estilização**: Tailwind CSS
-- **Banco Local**: IndexedDB (Dexie.js)
-- **PDF**: html2pdf.js
-- **IA Local**: Sistema de aprendizado e correlações
+- **Frontend:** React 18 + Vite + TypeScript
+- **Estilização:** Tailwind CSS
+- **Banco Local:** IndexedDB (Dexie.js)
+- **PDF:** html2pdf.js
+- **Excel:** xlsx (SheetJS) ou exceljs
+- **Nuvem:** Firebase Firestore (opcional)
 
 ## Estrutura do Projeto
 
 ```
 src/
-├── components/          # Componentes React
-├── pages/              # Páginas da aplicação
-├── utils/              # Utilitários
-│   ├── calculations/   # Funções puras de cálculo
-│   │   ├── megger.ts   # calculateMegger() - resistência de isolamento
-│   │   ├── cable.ts    # calculateCable(), calculateVoltageDrop()
-│   │   ├── breaker.ts  # calculateBreaker() - disjuntor
-│   │   ├── microhm.ts  # calculateMicrohm()
-│   │   └── hipot.ts    # calculateHipot()
-│   ├── norms.ts        # validateByNBR5410(), validateByIEC60364()
-│   ├── reports/        # Motores de relatório
-│   │   ├── megger.ts   # generateMeggerReport()
-│   │   ├── cable.ts    # generateCableReport()
-│   │   └── panel.ts    # generatePanelReport()
-│   ├── generator.ts    # Gerador IR com IA
-│   ├── units.ts        # Formatação de unidades
-│   └── export.ts       # Exportação PDF/CSV
-├── db/                 # Banco de dados
-└── types/              # Tipos TypeScript
+├── components/          # Layout, AIInsights
+├── pages/               # Dashboard, GenerateReport, MultiPhase, Cable, Breaker, Tools, Panel, Reports...
+├── utils/
+│   ├── calculations/    # megger, cable, breaker, microhm, hipot
+│   ├── reports/         # megger, cable, panel, microhm, hipot, breaker
+│   ├── norms.ts         # NBR5410, IEC60364
+│   ├── generator.ts     # Gerador IR com IA
+│   ├── export.ts        # PDF
+│   └── export-excel.ts  # Excel
+├── db/                  # Dexie + cloud (Firebase)
+└── types/               # Tipos TypeScript
 ```
 
-## Fluxo de Trabalho
+## Documentos de Referência
 
-### Geração Simples
-1. Acesse "Gerar Rápido" no Dashboard
-2. Configure categoria e tensão
-3. Preencha campos opcionais
-4. Clique "Gerar Valores"
-5. Visualize preview e exporte
-
-### Geração Multi-Fase com IA
-1. Acesse "Gerar Multi-Fase" no Dashboard
-2. **Step 1**: Configure equipamento e nomes das fases
-3. **Step 2**: Escolha combinações fase/fase e fase/massa
-4. **Step 3**: Defina condições e qualidade esperada
-5. Clique "Gerar Todos" para criar múltiplos relatórios
-6. Exporte todos os relatórios de uma vez
-
-## Série de Tempos Fixa
-
-Todos os relatórios seguem a série temporal padrão:
-- **00:15** - Primeira leitura
-- **00:30** - Segunda leitura
-- **00:45** - Terceira leitura
-- **01:00** - Quarta leitura
-
-## Perfis por Categoria
-
-Cada categoria possui parâmetros específicos para geração:
-
-```typescript
-const profiles = {
-  cabo:  { baseG: [5, 20],   growth: [1.05, 1.18], minGoodG: 20 },
-  motor: { baseG: [1, 5],    growth: [1.03, 1.12], minGoodG: 5  },
-  bomba: { baseG: [1, 5],    growth: [1.03, 1.12], minGoodG: 5  },
-  trafo: { baseG: [10, 50],  growth: [1.05, 1.18], minGoodG: 50 },
-  outro: { baseG: [0.5, 5],  growth: [1.02, 1.10], minGoodG: 5  }
-};
-```
-
-## Escala de Resistência
-
-Formatação automática baseada no valor:
-- **< 1 kΩ**: Ω (ex: 500Ω)
-- **1 kΩ - < 1 MΩ**: kΩ (ex: 2.50kΩ)
-- **1 MΩ - < 1 GΩ**: MΩ (ex: 15.30MΩ)
-- **1 GΩ - < 1 TΩ**: GΩ (ex: 5.23GΩ)
-- **≥ 1 TΩ**: TΩ (ex: 2.15TΩ)
-- **≥ 5 TΩ**: "0.99 OVRG"
-
-## Sistema de IA
-
-### Validação Inteligente
-- Detecta valores anômalos
-- Valida correlações entre fases
-- Sugere correções quando necessário
-
-### Geração Correlacionada
-- Valores fase/fase baseados nas fases individuais
-- Valores fase/massa relacionados às fases
-- Mantém consistência física
-
-### Aprendizado Local
-- Aprende com histórico de testes
-- Ajusta perfis baseado em resultados anteriores
-- Melhora precisão com uso
-
-## Migração
-
-O sistema suporta migração de dados da versão anterior:
-- Conversão automática de relatórios antigos
-- Preservação de configurações existentes
-- Compatibilidade com dados salvos
+Pasta `documentos/referencias/` preparada para PDFs e planilhas Excel de apoio ao treinamento e automação. Consulte `documentos/referencias/README.md` para formato esperado.
 
 ## Desenvolvimento
 

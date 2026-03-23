@@ -1,8 +1,8 @@
-# Plano de Testes - EletriLab Ultra-MVP com IA
+# Plano de Testes - EletriLab - Gerador de Relatórios de Qualidade Elétrica
 
 ## Visão Geral
 
-Este plano de testes abrange todas as funcionalidades do EletriLab Ultra-MVP com IA, incluindo geração simples, multi-fase, sistema de IA e validações inteligentes.
+Este plano de testes abrange todas as funcionalidades do EletriLab: Megger, Microhmímetro, Hipot, Lançamento de Cabo e Testes de Disjuntor. Inclui validação de **entrada manual** e **cálculo automático**, geração multi-fase, exportação PDF/Excel e sistema de IA.
 
 ## Estratégia de Testes
 
@@ -14,8 +14,10 @@ Este plano de testes abrange todas as funcionalidades do EletriLab Ultra-MVP com
 
 ### Cobertura
 - **Código**: Mínimo 80% de cobertura
-- **Funcionalidades**: 100% das features principais
+- **Funcionalidades**: 100% das features (Megger, Microhm, Hipot, Cabo, Disjuntor)
+- **Entrada manual**: Validação de valores digitados pelo usuário
 - **Interface**: Todos os fluxos de usuário
+- **Exportação**: PDF e Excel para cada tipo
 - **Performance**: Tempo de resposta < 2s
 
 ## Cenários de Teste
@@ -335,6 +337,42 @@ describe('Interface - Preview', () => {
 });
 ```
 
+### 4.5 Entrada Manual vs. Automática
+
+```typescript
+describe('Entrada Manual - Todos os Relatórios', () => {
+  it('Megger: deve aceitar leituras editadas manualmente', () => {
+    const report = generateReportFromManualReadings({
+      readings: [
+        { time: '00:15', resistance: '5.23GΩ' },
+        { time: '00:30', resistance: '5.89GΩ' },
+        { time: '00:45', resistance: '6.70GΩ' },
+        { time: '01:00', resistance: '7.58GΩ' }
+      ]
+    });
+    expect(report.dai).toBe('1.29');
+  });
+
+  it('Microhm: deve aceitar V, I, R_ref manual', () => {
+    const result = generateMicrohmReport({
+      voltage_V: 1,
+      current_A: 0.1,
+      reference_Ohm: 0.01
+    });
+    expect(result.R_Ohm).toBe(10);
+    expect(result.percentDelta).toBeDefined();
+  });
+
+  it('Hipot: deve aceitar Vteste manual', () => {
+    const result = generateHipotReport({
+      nominalVoltage_V: 220,
+      Vteste_V: 1440  // Manual
+    });
+    expect(result.Vteste_V).toBe(1440);
+  });
+});
+```
+
 ### 5. Exportação
 
 #### 5.1 Exportação PDF
@@ -358,7 +396,25 @@ describe('Exportação - PDF', () => {
 });
 ```
 
-#### 5.2 Exportação CSV
+#### 5.2 Exportação Excel
+```typescript
+describe('Exportação - Excel', () => {
+  it('deve gerar Excel de relatório Megger', async () => {
+    const report = generateSampleReport();
+    const blob = await exportMeggerExcel(report);
+    expect(blob.type).toMatch(/spreadsheet|excel|xml/);
+    expect(blob.size).toBeGreaterThan(100);
+  });
+
+  it('deve gerar Excel de relatório Microhm', async () => {
+    const report = generateSampleMicrohmReport();
+    const blob = await exportMicrohmExcel(report);
+    expect(blob.type).toBeDefined();
+  });
+});
+```
+
+#### 5.3 Exportação CSV
 ```typescript
 describe('Exportação - CSV', () => {
   it('deve gerar CSV com dados corretos', () => {

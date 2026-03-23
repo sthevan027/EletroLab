@@ -1,8 +1,8 @@
-# Modelo de Dados - EletriLab Ultra-MVP com IA
+# Modelo de Dados - EletriLab - Gerador de Relatórios de Qualidade Elétrica
 
 ## Visão Geral
 
-O EletriLab Ultra-MVP utiliza um modelo de dados simplificado focado em relatórios de Megger/IR, com suporte a geração multi-fase e sistema de IA local para validação e correlações.
+O EletriLab utiliza um modelo de dados unificado para **relatórios de qualidade elétrica**: Megger, Microhmímetro, Hipot, Lançamento de Cabo e Testes de Disjuntor. Suporta entrada manual de valores e cálculo automático, com persistência em IndexedDB e sincronização opcional no Firebase.
 
 ## Schema do Banco de Dados
 
@@ -185,6 +185,7 @@ const systemConfigs = {
   exportSettings: {
     pdfFormat: 'a7',
     pdfOrientation: 'portrait',
+    excelEnabled: true,
     csvDelimiter: ','
   },
   aiSettings: {
@@ -375,9 +376,54 @@ export async function migrateV2ToV3(): Promise<void> {
 }
 ```
 
+## Relatórios de Qualidade (Novo Modelo Unificado)
+
+```typescript
+// Tipo unificado para todos os relatórios de qualidade
+type QualityReportType = 'megger' | 'microhm' | 'hipot' | 'cable' | 'breaker';
+
+interface QualityReport {
+  id: string;
+  type: QualityReportType;
+  createdAt: Date;
+  isSaved: boolean;
+  data: MeggerReportData | MicrohmReportData | HipotReportData | CableReportData | BreakerReportData;
+  meta?: { client?: string; operator?: string; tag?: string; site?: string };
+}
+
+// Microhm
+interface MicrohmReportData {
+  voltage_V: number;
+  current_A: number;
+  reference_Ohm: number;
+  R_Ohm: number;
+  percentDelta: number;
+  status: 'ok' | 'alerta' | 'mau_contato';
+  possibleBadContact: boolean;
+}
+
+// Hipot
+interface HipotReportData {
+  nominalVoltage_V: number;
+  Vteste_V: number;
+  formulaUsed: '2V+1000' | '1.5V';
+}
+
+// Breaker
+interface BreakerReportData {
+  loadCurrent_A: number;
+  loadType: 'iluminacao' | 'tomada' | 'motor';
+  cableMaxCurrent_A: number;
+  In_A: number;
+  curve: string;
+  coordinationOk: boolean;
+}
+```
+
 ## Notas de Implementação
 
 - **Compatibilidade**: Mantém compatibilidade com dados da versão anterior
-- **Escalabilidade**: Suporte a diferentes números de fases
-- **Flexibilidade**: Configurações personalizáveis por usuário
-- **Inteligência**: Sistema de aprendizado local sem dependências externas
+- **Escalabilidade**: Suporte a diferentes números de fases e tipos de relatório
+- **Flexibilidade**: Entrada manual OU cálculo automático em todos os relatórios
+- **Inteligência**: Sistema de aprendizado local (Megger multi-fase) sem dependências externas
+- **Exportação**: PDF e Excel para todos os tipos
