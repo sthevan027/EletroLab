@@ -8,6 +8,7 @@ on:
       - "public/**"
       - "index.html"
       - "package.json"
+      - "package-lock.json"
       - "pnpm-lock.yaml"
       - "tsconfig*.json"
       - "vite.config.ts"
@@ -21,11 +22,13 @@ on:
       - "public/**"
       - "index.html"
       - "package.json"
+      - "package-lock.json"
       - "pnpm-lock.yaml"
       - "tsconfig*.json"
       - "vite.config.ts"
       - "tailwind.config.js"
       - "postcss.config.js"
+      - ".github/workflows/ci-build-check.yml"
 
 permissions:
   contents: read
@@ -46,25 +49,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          cache: npm
 
       - name: Instalar dependências
-        run: pnpm install
+        run: npm ci
 
       - name: Verificar tipos TypeScript
         id: typecheck
         continue-on-error: true
         run: |
           set +e
-          OUTPUT=$(pnpm exec tsc --noEmit 2>&1)
+          OUTPUT=$(npx tsc --noEmit 2>&1)
           EXIT_CODE=$?
           echo "$OUTPUT"
 
@@ -84,25 +82,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          cache: npm
 
       - name: Instalar dependências
-        run: pnpm install
+        run: npm ci
 
       - name: Executar ESLint
         id: lint
         continue-on-error: true
         run: |
           set +e
-          OUTPUT=$(pnpm lint 2>&1)
+          OUTPUT=$(npm run lint 2>&1)
           EXIT_CODE=$?
           echo "$OUTPUT"
 
@@ -124,25 +117,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          cache: npm
 
       - name: Instalar dependências
-        run: pnpm install
+        run: npm ci
 
       - name: Build do projeto
         id: build
         continue-on-error: true
         run: |
           set +e
-          OUTPUT=$(pnpm build 2>&1)
+          OUTPUT=$(npm run build 2>&1)
           EXIT_CODE=$?
           echo "$OUTPUT"
 
