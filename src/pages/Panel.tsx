@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
-  BoltIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
-  Squares2X2Icon
+  Squares2X2Icon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import { generatePanelReport } from '../utils/reports/panel';
 
@@ -165,7 +164,10 @@ const Panel: React.FC = () => {
                     onChange={(e) => setConfig(c => ({ ...c, includeHipot: e.target.checked }))}
                     className="mr-2"
                   />
-                  <span className="text-sm text-white">Hi-Pot</span>
+                  <span className="text-sm text-white flex items-center gap-1">
+                    <BoltIcon className="w-4 h-4 text-yellow-400 opacity-80" />
+                    Hi-Pot
+                  </span>
                 </label>
                 {config.includeHipot && (
                   <input type="number" placeholder="V nominal" value={config.hipotVnom} onChange={(e) => setConfig(c => ({ ...c, hipotVnom: parseFloat(e.target.value) || 0 }))} className="ml-4 px-3 py-2 bg-gray-700 rounded-lg text-white text-sm w-32" />
