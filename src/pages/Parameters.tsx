@@ -8,11 +8,9 @@ import {
   PlusIcon,
   TrashIcon,
   PencilIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import { Category, CategoryProfile, Parameter, SystemConfig } from '../types';
+import { Category, CategoryProfile, SystemConfig } from '../types';
 import { dbUtils } from '../db/database';
 
 const Parameters: React.FC = () => {
@@ -35,8 +33,6 @@ const Parameters: React.FC = () => {
   const [categoryProfiles, setCategoryProfiles] = useState<CategoryProfile[]>([]);
   const [editingProfile, setEditingProfile] = useState<CategoryProfile | null>(null);
   const [showNewProfile, setShowNewProfile] = useState(false);
-
-  const categories: Category[] = ['cabo', 'motor', 'bomba', 'trafo', 'outro'];
 
   useEffect(() => {
     loadParameters();
