@@ -8,7 +8,7 @@ on:
       - "public/**"
       - "index.html"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig*.json"
       - "vite.config.ts"
       - "tailwind.config.js"
@@ -21,7 +21,7 @@ on:
       - "public/**"
       - "index.html"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
       - "tsconfig*.json"
       - "vite.config.ts"
       - "tailwind.config.js"
@@ -48,20 +48,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Instalar dependências
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Verificar tipos TypeScript
         id: typecheck
         continue-on-error: true
         run: |
           set +e
-          OUTPUT=$(npx tsc --noEmit 2>&1)
+          OUTPUT=$(pnpm exec tsc --noEmit 2>&1)
           EXIT_CODE=$?
           echo "$OUTPUT"
 
@@ -81,20 +86,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Instalar dependências
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Executar ESLint
         id: lint
         continue-on-error: true
         run: |
           set +e
-          OUTPUT=$(npm run lint 2>&1)
+          OUTPUT=$(pnpm run lint 2>&1)
           EXIT_CODE=$?
           echo "$OUTPUT"
 
@@ -116,20 +126,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Instalar dependências
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Executar testes
         id: test
         continue-on-error: true
         run: |
           set +e
-          OUTPUT=$(npm test 2>&1)
+          OUTPUT=$(pnpm test 2>&1)
           EXIT_CODE=$?
           echo "$OUTPUT"
 
@@ -151,20 +166,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Instalar dependências
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build do projeto
         id: build
         continue-on-error: true
         run: |
           set +e
-          OUTPUT=$(npm run build 2>&1)
+          OUTPUT=$(pnpm run build 2>&1)
           EXIT_CODE=$?
           echo "$OUTPUT"
 
