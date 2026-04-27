@@ -106,10 +106,45 @@ jobs:
 
           exit $EXIT_CODE
 
+  test:
+    name: Test Check
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint]
+    if: always()
+    outputs:
+      status: ${{ steps.test.outcome }}
+      errors: ${{ steps.test.outputs.errors }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar testes
+        id: test
+        continue-on-error: true
+        run: |
+          set +e
+          OUTPUT=$(npm test 2>&1)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "errors<<$EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+          exit $EXIT_CODE
+
   build:
     name: Build Check
     runs-on: ubuntu-latest
-    needs: [typecheck, lint]
+    needs: [typecheck, lint, test]
     if: always()
     outputs:
       status: ${{ steps.build.outcome }}
@@ -144,8 +179,8 @@ jobs:
   report-issues:
     name: Reportar Problemas
     runs-on: ubuntu-latest
-    needs: [typecheck, lint, build]
-    if: always() && (needs.typecheck.outputs.status == 'failure' || needs.lint.outputs.status == 'failure' || needs.build.outputs.status == 'failure')
+    needs: [typecheck, lint, test, build]
+    if: always() && (needs.typecheck.outputs.status == 'failure' || needs.lint.outputs.status == 'failure' || needs.test.outputs.status == 'failure' || needs.build.outputs.status == 'failure')
     steps:
       - uses: actions/checkout@v4
 
@@ -171,6 +206,13 @@ jobs:
             BODY+="\`\`\`\n${{ needs.lint.outputs.errors }}\n\`\`\`\n\n"
           else
             BODY+="### ✅ ESLint - OK\n\n"
+          fi
+
+          if [ "${{ needs.test.outputs.status }}" = "failure" ]; then
+            BODY+="### ❌ Testes - Falha\n\n"
+            BODY+="\`\`\`\n${{ needs.test.outputs.errors }}\n\`\`\`\n\n"
+          else
+            BODY+="### ✅ Testes - OK\n\n"
           fi
 
           if [ "${{ needs.build.outputs.status }}" = "failure" ]; then
@@ -247,8 +289,8 @@ jobs:
   ci-success:
     name: CI Aprovado
     runs-on: ubuntu-latest
-    needs: [typecheck, lint, build]
-    if: always() && needs.typecheck.outputs.status == 'success' && needs.lint.outputs.status == 'success' && needs.build.outputs.status == 'success'
+    needs: [typecheck, lint, test, build]
+    if: always() && needs.typecheck.outputs.status == 'success' && needs.lint.outputs.status == 'success' && needs.test.outputs.status == 'success' && needs.build.outputs.status == 'success'
     steps:
       - name: Fechar issues automáticas antigas
         if: github.event_name == 'push'
