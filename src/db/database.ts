@@ -1,6 +1,7 @@
 import Dexie, { Table } from 'dexie';
 import { 
   IRReport, 
+  EletroMecanicoReport,
   MultiPhaseConfig, 
   MultiPhaseReport, 
   AILearningHistory, 
@@ -33,10 +34,11 @@ export class EletriLabDB extends Dexie {
   aiLearningHistory!: Table<AILearningHistory>;
   categoryProfiles!: Table<CategoryProfile>;
   systemConfigs!: Table<SystemConfig>;
+  emReports!: Table<EletroMecanicoReport>;
 
   constructor() {
     super('EletriLabDB');
-    
+
     this.version(4).stores({
       // Tabelas originais
       equipment: 'id, tag, category, status, location, manufacturer',
@@ -51,7 +53,27 @@ export class EletriLabDB extends Dexie {
       multiPhaseReports: '++id, configId, createdAt, isSaved',
       aiLearningHistory: '++id, category, phaseCount, createdAt',
       categoryProfiles: '++id, category, createdAt',
-      systemConfigs: '++id, createdAt'
+      systemConfigs: '++id, createdAt',
+      // OBS: versão 4 não tinha EM; mantemos aqui para não quebrar ambientes já com v4.
+      // A tabela EM real e indexação correta fica na v5.
+      emReports: '++id, module, discipline, createdAt'
+    });
+
+    // Versão 5: Tabela EM com chave string (id) e índices úteis.
+    // Importante: usar `id` (não ++id) porque `EletroMecanicoReport.id` já é string.
+    this.version(5).stores({
+      equipment: 'id, tag, category, status, location, manufacturer',
+      report: 'id, number, date, client, status, responsible',
+      test: 'id, reportId, equipmentId, testType, result, performedAt',
+      configuration: 'id',
+      irReports: '++id, category, createdAt, isSaved',
+      parameters: '++id, key, category',
+      multiPhaseConfigs: '++id, equipmentType, createdAt',
+      multiPhaseReports: '++id, configId, createdAt, isSaved',
+      aiLearningHistory: '++id, category, phaseCount, createdAt',
+      categoryProfiles: '++id, category, createdAt',
+      systemConfigs: '++id, createdAt',
+      emReports: 'id, module, discipline, createdAt'
     });
   }
 }
@@ -416,6 +438,43 @@ export const dbUtils = {
     }
   },
 
+  // === ELETROMECÂNICO (novo) ===
+  async getAllEMReports(): Promise<EletroMecanicoReport[]> {
+    try {
+      return await db.emReports.orderBy('createdAt').reverse().toArray();
+    } catch (error) {
+      console.error('Erro ao buscar relatórios EM:', error);
+      return [];
+    }
+  },
+
+  async getEMReport(id: string): Promise<EletroMecanicoReport | null> {
+    try {
+      return await db.emReports.get(id) || null;
+    } catch (error) {
+      console.error('Erro ao buscar relatório EM:', error);
+      return null;
+    }
+  },
+
+  async saveEMReport(report: EletroMecanicoReport): Promise<void> {
+    try {
+      await db.emReports.put(report);
+    } catch (error) {
+      console.error('Erro ao salvar relatório EM:', error);
+      throw error;
+    }
+  },
+
+  async deleteEMReport(id: string): Promise<void> {
+    try {
+      await db.emReports.delete(id);
+    } catch (error) {
+      console.error('Erro ao deletar relatório EM:', error);
+      throw error;
+    }
+  },
+
   async getSavedIRReports(): Promise<IRReport[]> {
     try {
       return await db.irReports.where('isSaved').equals(1).toArray();
@@ -598,7 +657,7 @@ export const dbUtils = {
   // Backup/Restore simples (banco local IndexedDB)
   async exportAll(): Promise<any> {
     try {
-      const [equipment, reports, tests, irReports, multiConfigs, multiReports, ai, profiles, system, config] = await Promise.all([
+      const [equipment, reports, tests, irReports, multiConfigs, multiReports, ai, profiles, system, config, emReports] = await Promise.all([
         db.equipment.toArray(),
         db.report.toArray(),
         db.test.toArray(),
@@ -608,7 +667,8 @@ export const dbUtils = {
         db.aiLearningHistory.toArray(),
         db.categoryProfiles.toArray(),
         db.systemConfigs.toArray(),
-        db.configuration.toArray()
+        db.configuration.toArray(),
+        db.emReports.toArray(),
       ]);
       return {
         version: 1,
@@ -619,6 +679,7 @@ export const dbUtils = {
         irReports,
         multiConfigs,
         multiReports,
+        emReports,
         ai,
         profiles,
         system,
@@ -641,11 +702,12 @@ export const dbUtils = {
             db.test.clear(),
           ]);
         });
-        await db.transaction('rw', db.irReports, db.multiPhaseConfigs, db.multiPhaseReports, async () => {
+        await db.transaction('rw', db.irReports, db.multiPhaseConfigs, db.multiPhaseReports, db.emReports, async () => {
           await Promise.all([
             db.irReports.clear(),
             db.multiPhaseConfigs.clear(),
             db.multiPhaseReports.clear(),
+            db.emReports.clear(),
           ]);
         });
         await db.transaction('rw', db.aiLearningHistory, db.categoryProfiles, db.systemConfigs, db.configuration, async () => {
@@ -663,10 +725,11 @@ export const dbUtils = {
         if (data.reports?.length) await db.report.bulkAdd(data.reports);
         if (data.tests?.length) await db.test.bulkAdd(data.tests);
       });
-      await db.transaction('rw', db.irReports, db.multiPhaseConfigs, db.multiPhaseReports, async () => {
+      await db.transaction('rw', db.irReports, db.multiPhaseConfigs, db.multiPhaseReports, db.emReports, async () => {
         if (data.irReports?.length) await db.irReports.bulkAdd(data.irReports);
         if (data.multiConfigs?.length) await db.multiPhaseConfigs.bulkAdd(data.multiConfigs);
         if (data.multiReports?.length) await db.multiPhaseReports.bulkAdd(data.multiReports);
+        if (data.emReports?.length) await db.emReports.bulkAdd(data.emReports);
       });
       await db.transaction('rw', db.aiLearningHistory, db.categoryProfiles, db.systemConfigs, db.configuration, async () => {
         if (data.ai?.length) await db.aiLearningHistory.bulkAdd(data.ai);
@@ -821,6 +884,7 @@ export const dbUtils = {
       await db.test.clear();
       await db.configuration.clear();
       await db.irReports.clear();
+      await db.emReports.clear();
       await db.parameters.clear();
       await db.multiPhaseConfigs.clear();
       await db.multiPhaseReports.clear();

@@ -425,3 +425,127 @@ export interface EnvironmentalFactors {
   temperature: number;               // °C
   humidity: number;                  // %
 }
+
+// ==============================
+// === ELETROMECÂNICO (NOVO)  ===
+// ==============================
+
+export type EMDiscipline = 'eletrica' | 'mecanica';
+
+export type EMElectricalModule =
+  | 'megger_ir'
+  | 'microhm'
+  | 'hipot'
+  | 'cable'
+  | 'breaker'
+  | 'multiphase_megger';
+
+export type EMMechanicalModule =
+  | 'vibracao'
+  | 'alinhamento'
+  | 'termografia'
+  | 'lubrificacao';
+
+export type EMModule = EMElectricalModule | EMMechanicalModule;
+
+export interface EMResponsible {
+  name: string;
+  crea?: string;
+  role?: string; // ex: Engenheiro Eletricista
+}
+
+export interface EMSignature {
+  label: string; // ex: "Responsável Técnico"
+  signedBy?: string;
+  imageDataUrl?: string; // PNG/JPG data URL (opcional)
+  date?: string; // ISO ou string livre
+}
+
+export interface EMHeaderMeta {
+  reportNumber?: string;
+  date: string; // ISO yyyy-mm-dd
+  client: string;
+  site: string; // obra/local
+  tag?: string;
+  equipmentDescription?: string;
+  responsible: EMResponsible;
+  reviewers?: EMResponsible[];
+  signatures?: EMSignature[];
+  observations?: string;
+  recommendations?: string;
+}
+
+export type EMElectricalPayload =
+  | { module: 'megger_ir'; data: IRReport }
+  | {
+      module: 'microhm';
+      data: {
+        voltage_V: number;
+        current_A: number;
+        reference_Ohm: number;
+        R_Ohm: number;
+        percentDelta: number;
+        status: string;
+        possibleBadContact: boolean;
+      };
+    }
+  | {
+      module: 'hipot';
+      data: {
+        nominalVoltage_V: number;
+        Vteste_V: number;
+        formulaUsed: string;
+      };
+    }
+  | {
+      module: 'cable';
+      data: {
+        power: number;
+        voltage: number;
+        powerFactor: number;
+        systemType: string;
+        distance: number;
+        voltageDropPercent: number;
+        current_A: number;
+        minSection_mm2: number;
+        resistance_Ohm: number;
+        actualDrop: number;
+        status: string;
+        breakerIn?: number;
+        breakerCurve?: string;
+        coordinationOk?: boolean;
+      };
+    }
+  | {
+      module: 'breaker';
+      data: {
+        loadCurrent_A: number;
+        loadType: string;
+        cableMaxCurrent_A: number;
+        In_A: number;
+        curve: string;
+        coordinationOk: boolean;
+      };
+    }
+  | { module: 'multiphase_megger'; data: MultiPhaseReport };
+
+export type EMMechanicalPayload = {
+  module: EMMechanicalModule;
+  // payload mecânico será tipado por módulo quando os módulos forem implementados
+  data: Record<string, unknown>;
+};
+
+export type EMPayload =
+  | ({ discipline: 'eletrica' } & EMElectricalPayload)
+  | ({ discipline: 'mecanica' } & EMMechanicalPayload);
+
+export interface EletroMecanicoReport {
+  id: string;
+  discipline: EMDiscipline;
+  module: EMModule;
+  createdAt: Date;
+  updatedAt?: Date;
+  header: EMHeaderMeta;
+  payload: EMPayload;
+  version: number; // incrementável para migração do schema do relatório
+}
