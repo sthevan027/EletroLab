@@ -26,6 +26,7 @@ on:
       - "vite.config.ts"
       - "tailwind.config.js"
       - "postcss.config.js"
+  workflow_dispatch:
 
 permissions:
   contents: read
