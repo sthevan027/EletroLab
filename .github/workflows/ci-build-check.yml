@@ -52,7 +52,7 @@ jobs:
           cache: npm
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm install
 
       - name: Verificar tipos TypeScript
         id: typecheck
@@ -85,7 +85,7 @@ jobs:
           cache: npm
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm install
 
       - name: Executar ESLint
         id: lint
@@ -120,7 +120,7 @@ jobs:
           cache: npm
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm install
 
       - name: Executar testes
         id: test
@@ -155,7 +155,7 @@ jobs:
           cache: npm
 
       - name: Instalar dependências
-        run: npm ci
+        run: npm install
 
       - name: Build do projeto
         id: build
