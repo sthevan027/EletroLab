@@ -1,5 +1,5 @@
 import { EnvironmentalFactors, PhysicalCableOptions } from '../types';
-import { formatResistance as formatOhms, getStandardTimeSeries } from './units';
+import { formatResistance as formatOhms } from './units';
 
 /**
  * Retorna constante de isolação (Ki) por material em MΩ·km

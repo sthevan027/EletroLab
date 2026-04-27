@@ -123,8 +123,7 @@ export function calculateCable(input: CableInput): CableResult {
     powerFactor,
     systemType,
     distance,
-    voltageDropPercent,
-    ambientTemp = 25
+    voltageDropPercent
   } = input;
 
   const P = Math.max(0, Number(power) || 0);

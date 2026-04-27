@@ -688,3 +688,247 @@ export async function exportBatchReports(
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 }
+
+// ==========================================
+// EXPORTAÇÃO PDF - MICROHMÍMETRO
+// ==========================================
+
+export async function exportMicrohmPDF(data: {
+  voltage_V: number;
+  current_A: number;
+  reference_Ohm: number;
+  R_Ohm: number;
+  percentDelta: number;
+  status: string;
+  possibleBadContact: boolean;
+  tag?: string;
+  client?: string;
+  operator?: string;
+  date?: string;
+}): Promise<Blob> {
+  const statusLabel = data.status === 'ok' ? 'OK' : data.status === 'alerta' ? 'ALERTA' : 'MAU CONTATO';
+  const statusColor = data.status === 'ok' ? '#22c55e' : data.status === 'alerta' ? '#f59e0b' : '#ef4444';
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937;">
+      <div style="text-align:center;border-bottom:3px solid #7c3aed;padding-bottom:16px;margin-bottom:20px;">
+        <h1 style="font-size:22px;color:#7c3aed;margin:0;">RELATÓRIO DE MICROHMÍMETRO</h1>
+        <p style="color:#6b7280;font-size:12px;margin-top:4px;">EletriLab - Relatório de Qualidade</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">TAG</strong><br/>${data.tag || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">CLIENTE</strong><br/>${data.client || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">OPERADOR</strong><br/>${data.operator || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">DATA</strong><br/>${data.date || new Date().toLocaleDateString('pt-BR')}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <thead>
+          <tr style="background:#f3f4f6;">
+            <th style="text-align:left;padding:10px;border:1px solid #d1d5db;font-size:13px;">Parâmetro</th>
+            <th style="text-align:right;padding:10px;border:1px solid #d1d5db;font-size:13px;">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Tensão Aplicada</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.voltage_V} V</td></tr>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Corrente Medida</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.current_A} A</td></tr>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Referência</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.reference_Ohm} Ω</td></tr>
+          <tr style="background:#f9fafb;font-weight:bold;"><td style="padding:8px 10px;border:1px solid #e5e7eb;">R Medida</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.R_Ohm} Ω</td></tr>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Desvio</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.percentDelta.toFixed(2)}%</td></tr>
+        </tbody>
+      </table>
+      <div style="text-align:center;padding:16px;border-radius:12px;background:${statusColor}15;border:2px solid ${statusColor};">
+        <span style="font-size:18px;font-weight:bold;color:${statusColor};">${statusLabel}</span>
+        ${data.possibleBadContact ? '<p style="color:#ef4444;font-size:12px;margin-top:4px;">Possível mau contato detectado</p>' : ''}
+      </div>
+      <p style="text-align:center;font-size:10px;color:#9ca3af;margin-top:24px;">Gerado por EletriLab</p>
+    </div>`;
+
+  return await html2pdf().from(html).set({
+    margin: [10, 10, 10, 10],
+    filename: `relatorio_microhm_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).outputPdf('blob');
+}
+
+// ==========================================
+// EXPORTAÇÃO PDF - HI-POT
+// ==========================================
+
+export async function exportHipotPDF(data: {
+  nominalVoltage_V: number;
+  Vteste_V: number;
+  formulaUsed: string;
+  tag?: string;
+  client?: string;
+  operator?: string;
+  date?: string;
+}): Promise<Blob> {
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937;">
+      <div style="text-align:center;border-bottom:3px solid #ea580c;padding-bottom:16px;margin-bottom:20px;">
+        <h1 style="font-size:22px;color:#ea580c;margin:0;">RELATÓRIO DE HI-POT</h1>
+        <p style="color:#6b7280;font-size:12px;margin-top:4px;">EletriLab - Relatório de Qualidade</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">TAG</strong><br/>${data.tag || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">CLIENTE</strong><br/>${data.client || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">OPERADOR</strong><br/>${data.operator || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">DATA</strong><br/>${data.date || new Date().toLocaleDateString('pt-BR')}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <thead>
+          <tr style="background:#f3f4f6;">
+            <th style="text-align:left;padding:10px;border:1px solid #d1d5db;font-size:13px;">Parâmetro</th>
+            <th style="text-align:right;padding:10px;border:1px solid #d1d5db;font-size:13px;">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Tensão Nominal</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.nominalVoltage_V} V</td></tr>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Fórmula Utilizada</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.formulaUsed === '2V+1000' ? '2·V + 1000' : '1.5 × V'}</td></tr>
+          <tr style="background:#fff7ed;font-weight:bold;font-size:16px;"><td style="padding:12px 10px;border:1px solid #e5e7eb;">Tensão de Teste</td><td style="text-align:right;padding:12px 10px;border:1px solid #e5e7eb;color:#ea580c;">${data.Vteste_V} V</td></tr>
+        </tbody>
+      </table>
+      <p style="text-align:center;font-size:10px;color:#9ca3af;margin-top:24px;">Gerado por EletriLab</p>
+    </div>`;
+
+  return await html2pdf().from(html).set({
+    margin: [10, 10, 10, 10],
+    filename: `relatorio_hipot_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).outputPdf('blob');
+}
+
+// ==========================================
+// EXPORTAÇÃO PDF - CABO
+// ==========================================
+
+export async function exportCablePDF(data: {
+  power: number;
+  voltage: number;
+  powerFactor: number;
+  systemType: string;
+  distance: number;
+  voltageDropPercent: number;
+  current_A: number;
+  minSection_mm2: number;
+  resistance_Ohm: number;
+  actualDrop: number;
+  status: string;
+  breakerIn?: number;
+  breakerCurve?: string;
+  coordinationOk?: boolean;
+  tag?: string;
+  client?: string;
+  operator?: string;
+}): Promise<Blob> {
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937;">
+      <div style="text-align:center;border-bottom:3px solid #3b82f6;padding-bottom:16px;margin-bottom:20px;">
+        <h1 style="font-size:22px;color:#3b82f6;margin:0;">RELATÓRIO DE LANÇAMENTO DE CABO</h1>
+        <p style="color:#6b7280;font-size:12px;margin-top:4px;">EletriLab - Relatório de Qualidade</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">TAG</strong><br/>${data.tag || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">CLIENTE</strong><br/>${data.client || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">OPERADOR</strong><br/>${data.operator || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">DATA</strong><br/>${new Date().toLocaleDateString('pt-BR')}</div>
+      </div>
+      <h3 style="font-size:14px;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:6px;">Parâmetros de Entrada</h3>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+        <tbody>
+          <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;">Potência</td><td style="text-align:right;padding:6px 10px;border:1px solid #e5e7eb;">${data.power} W</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;">Tensão</td><td style="text-align:right;padding:6px 10px;border:1px solid #e5e7eb;">${data.voltage} V</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;">FP</td><td style="text-align:right;padding:6px 10px;border:1px solid #e5e7eb;">${data.powerFactor}</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;">Sistema</td><td style="text-align:right;padding:6px 10px;border:1px solid #e5e7eb;">${data.systemType}</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;">Distância</td><td style="text-align:right;padding:6px 10px;border:1px solid #e5e7eb;">${data.distance} m</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;">Queda Admitida</td><td style="text-align:right;padding:6px 10px;border:1px solid #e5e7eb;">${data.voltageDropPercent}%</td></tr>
+        </tbody>
+      </table>
+      <h3 style="font-size:14px;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:6px;">Resultados</h3>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+        <tbody>
+          <tr style="background:#f0f9ff;font-weight:bold;"><td style="padding:8px 10px;border:1px solid #e5e7eb;">Corrente</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.current_A} A</td></tr>
+          <tr style="background:#f0f9ff;font-weight:bold;"><td style="padding:8px 10px;border:1px solid #e5e7eb;">Seção Mínima</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.minSection_mm2} mm²</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;">Resistência</td><td style="text-align:right;padding:6px 10px;border:1px solid #e5e7eb;">${data.resistance_Ohm} Ω</td></tr>
+          <tr><td style="padding:6px 10px;border:1px solid #e5e7eb;">Queda Real</td><td style="text-align:right;padding:6px 10px;border:1px solid #e5e7eb;color:${data.status === 'queda_alta' ? '#ef4444' : '#22c55e'};">${data.actualDrop}%</td></tr>
+        </tbody>
+      </table>
+      ${data.breakerIn ? `
+        <h3 style="font-size:14px;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:6px;">Disjuntor</h3>
+        <p style="font-size:16px;font-weight:bold;">${data.breakerIn} A - Curva ${data.breakerCurve || 'C'} ${data.coordinationOk ? '✓ Coordenação OK' : '✗ Coordenação inválida'}</p>
+      ` : ''}
+      <p style="text-align:center;font-size:10px;color:#9ca3af;margin-top:24px;">Gerado por EletriLab</p>
+    </div>`;
+
+  return await html2pdf().from(html).set({
+    margin: [10, 10, 10, 10],
+    filename: `relatorio_cabo_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).outputPdf('blob');
+}
+
+// ==========================================
+// EXPORTAÇÃO PDF - DISJUNTOR
+// ==========================================
+
+export async function exportBreakerPDF(data: {
+  loadCurrent_A: number;
+  loadType: string;
+  cableMaxCurrent_A: number;
+  In_A: number;
+  curve: string;
+  coordinationOk: boolean;
+  tag?: string;
+  client?: string;
+  operator?: string;
+}): Promise<Blob> {
+  const coordColor = data.coordinationOk ? '#22c55e' : '#ef4444';
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1f2937;">
+      <div style="text-align:center;border-bottom:3px solid #6366f1;padding-bottom:16px;margin-bottom:20px;">
+        <h1 style="font-size:22px;color:#6366f1;margin:0;">RELATÓRIO DE TESTE DE DISJUNTOR</h1>
+        <p style="color:#6b7280;font-size:12px;margin-top:4px;">EletriLab - Relatório de Qualidade</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">TAG</strong><br/>${data.tag || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">CLIENTE</strong><br/>${data.client || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">OPERADOR</strong><br/>${data.operator || 'N/A'}</div>
+        <div style="flex:1;min-width:120px;"><strong style="color:#6b7280;font-size:11px;">DATA</strong><br/>${new Date().toLocaleDateString('pt-BR')}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+        <thead>
+          <tr style="background:#f3f4f6;">
+            <th style="text-align:left;padding:10px;border:1px solid #d1d5db;font-size:13px;">Parâmetro</th>
+            <th style="text-align:right;padding:10px;border:1px solid #d1d5db;font-size:13px;">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Corrente de Carga</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.loadCurrent_A} A</td></tr>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Tipo de Carga</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.loadType}</td></tr>
+          <tr><td style="padding:8px 10px;border:1px solid #e5e7eb;">Corrente Máx. Cabo</td><td style="text-align:right;padding:8px 10px;border:1px solid #e5e7eb;">${data.cableMaxCurrent_A || 'N/A'} A</td></tr>
+        </tbody>
+      </table>
+      <div style="text-align:center;padding:20px;border-radius:12px;background:#eef2ff;border:2px solid #6366f1;margin-bottom:16px;">
+        <p style="font-size:14px;color:#6b7280;margin:0 0 4px;">Disjuntor Recomendado</p>
+        <p style="font-size:28px;font-weight:bold;color:#6366f1;margin:0;">${data.In_A} A - Curva ${data.curve}</p>
+      </div>
+      <div style="text-align:center;padding:12px;border-radius:8px;background:${coordColor}10;border:1px solid ${coordColor};">
+        <span style="font-weight:bold;color:${coordColor};">${data.coordinationOk ? '✓ Coordenação OK: Idj ≤ Icabo' : '✗ Coordenação inválida: Idj > Icabo'}</span>
+      </div>
+      <p style="text-align:center;font-size:10px;color:#9ca3af;margin-top:24px;">Gerado por EletriLab</p>
+    </div>`;
+
+  return await html2pdf().from(html).set({
+    margin: [10, 10, 10, 10],
+    filename: `relatorio_disjuntor_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).outputPdf('blob');
+}

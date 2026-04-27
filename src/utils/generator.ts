@@ -7,7 +7,7 @@ import { Category, CategoryProfile, IRReport, MultiPhaseConfig, MultiPhaseReport
 import { formatResistance, formatVoltage, getStandardTimeSeries, calculateDAI, parseResistance } from './units';
 import { calculateHybridResistance, formatResistance as formatResistancePhysics, applyTimeDecay, getInsulationConstant, estimateDiametersFromGauge, calculatePhysicalResistance, scaleResistanceForLength, applyEnvironmentalAdjustments } from './physics';
 import { dbUtils } from '../db/database';
-import { aiEngine, AIGenerationContext, AIGenerationResult } from './ai-engine';
+import { aiEngine, AIGenerationContext } from './ai-engine';
 
 /**
  * Opções para geração de série IR
@@ -63,10 +63,6 @@ export async function gerarSerieIR(opts: IRGenerationOptions): Promise<IRGenerat
     category,
     kv = 1.0,
     limitTOhm = 5,
-    tag,
-    client,
-    site,
-    operator,
     manufacturer,
     model
   } = opts;
@@ -206,38 +202,6 @@ function getDefaultProfile(category: Category): CategoryProfile {
 }
 
 /**
- * Gera leituras baseadas no perfil da categoria
- */
-function generateReadingsFromProfile(
-  profile: CategoryProfile,
-  kv: number,
-  limitTOhm: number
-): { time: string; kv: string; resistance: string }[] {
-  const times = getStandardTimeSeries();
-  const { min: baseMin, max: baseMax, decay } = profile.baseResistance;
-  
-  // Valor inicial aleatório dentro da faixa base
-  const baseValue = baseMin + Math.random() * (baseMax - baseMin);
-  let currentValue = baseValue; // Já está em ohms
-  
-  const readings = times.map((time, index) => {
-    // Aplicar decaimento se não for a primeira leitura
-    if (index > 0) {
-      const decayFactor = 1 - (decay * Math.random() * 0.5); // Variação do decaimento
-      currentValue *= decayFactor;
-    }
-    
-    return {
-      time,
-      kv: formatVoltage(kv),
-      resistance: formatResistance(currentValue, limitTOhm)
-    };
-  });
-  
-  return readings;
-}
-
-/**
  * Gera um relatório IR completo
  */
 export async function generateIRReport(opts: IRGenerationOptions): Promise<IRReport> {
@@ -266,7 +230,7 @@ export async function generateIRReport(opts: IRGenerationOptions): Promise<IRRep
 export async function generateCorrelatedIRReports(
   baseOptions: IRGenerationOptions,
   count: number,
-  correlationFactor: number = 0.8
+  _correlationFactor: number = 0.8
 ): Promise<IRReport[]> {
   // Gerar relatório base
   const baseReport = await generateIRReport(baseOptions);
@@ -376,22 +340,6 @@ export async function learnFromHistory(
 ): Promise<void> {
   if (historicalValues.length === 0) return;
   
-  // Calcular médias e desvios
-  const averages = historicalValues[0].map((_, index) => {
-    const values = historicalValues.map(row => row[index]);
-    return values.reduce((sum, val) => sum + val, 0) / values.length;
-  });
-  
-  const correlations = historicalValues[0].map((_, index) => {
-    if (index === 0) return 1;
-    const currentValues = historicalValues.map(row => row[index]);
-    const previousValues = historicalValues.map(row => row[index - 1]);
-    
-    // Calcular correlação simples
-    const correlation = calculateCorrelation(previousValues, currentValues);
-    return correlation;
-  });
-  
   // Salvar aprendizado
   await dbUtils.recordAILearning({
     category,
@@ -401,25 +349,6 @@ export async function learnFromHistory(
     output: 'generator_output',
     createdAt: new Date().toISOString()
   });
-}
-
-/**
- * Calcula correlação entre dois arrays de valores
- */
-function calculateCorrelation(x: number[], y: number[]): number {
-  if (x.length !== y.length || x.length === 0) return 0;
-  
-  const n = x.length;
-  const sumX = x.reduce((sum, val) => sum + val, 0);
-  const sumY = y.reduce((sum, val) => sum + val, 0);
-  const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
-  const sumX2 = x.reduce((sum, val) => sum + val * val, 0);
-  const sumY2 = y.reduce((sum, val) => sum + val * val, 0);
-  
-  const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-  
-  return denominator === 0 ? 0 : numerator / denominator;
 }
 
 /**
@@ -761,14 +690,6 @@ function applyEnvironmentalFactors(
   const humidityEffect = 1 + (humidity - 50) * profile.humidity.effect * -0.01;
   
   return value * tempEffect * humidityEffect;
-}
-
-/**
- * Gera variação aleatória realística
- */
-function generateRandomVariation(baseValue: number, variationPercent: number = 5): number {
-  const variation = (Math.random() - 0.5) * 2 * (variationPercent / 100);
-  return baseValue * (1 + variation);
 }
 
 /**

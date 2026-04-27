@@ -3,7 +3,7 @@
  * Sistema de aprendizado adaptativo com algoritmos de machine learning
  */
 
-import { Category, CategoryProfile, IRReport, MultiPhaseReport, PhysicalCableOptions } from '../types';
+import { Category, PhysicalCableOptions } from '../types';
 import { dbUtils } from '../db/database';
 import { calculateHybridResistance, formatResistance as physicsFormatResistance } from './physics';
 
@@ -261,7 +261,7 @@ export class AIEngine {
    */
   private performKMeansClustering(data: any[], k: number): any[] {
     if (data.length < k) {
-      return data.map((item, index) => ({
+      return data.map((item) => ({
         centroid: item,
         confidence: 0.5,
         frequency: 1
@@ -302,7 +302,6 @@ export class AIEngine {
     const sumY = values.reduce((a, b) => a + b, 0);
     const sumXY = x.reduce((sum, xi, i) => sum + xi * values[i], 0);
     const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-    const sumY2 = values.reduce((sum, yi) => sum + yi * yi, 0);
     
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
@@ -435,7 +434,7 @@ export class AIEngine {
   }
 
   private generateTimeSeries(pattern: number[]): number[] {
-    return pattern.map((value, index) => {
+    return pattern.map((value) => {
       // Adicionar variação realística
       const variation = 1 + (Math.random() - 0.5) * 0.1; // ±5%
       return value * variation;
@@ -447,7 +446,7 @@ export class AIEngine {
     return values.map(value => value * ageFactor);
   }
 
-  private formatReadings(values: number[], context: AIGenerationContext): { time: string; kv: string; resistance: string }[] {
+  private formatReadings(values: number[], _context: AIGenerationContext): { time: string; kv: string; resistance: string }[] {
     const times = ['00:15', '00:30', '00:45', '01:00'];
     return values.map((value, index) => ({
       time: times[index],

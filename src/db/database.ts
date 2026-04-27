@@ -7,7 +7,6 @@ import {
   Parameter,
   CategoryProfile,
   SystemConfig,
-  Category,
   EquipmentOriginal, 
   ReportOriginal, 
   TestOriginal, 
