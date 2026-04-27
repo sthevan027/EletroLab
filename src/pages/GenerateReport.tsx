@@ -24,6 +24,7 @@ import { exportCupomPDF } from '../utils/export';
 import { exportMeggerExcel } from '../utils/export-excel';
 import { dbUtils } from '../db/database';
 import { calculateDAI, formatVoltage } from '../utils/units';
+import { emFromIRReport } from '../em';
 
 type InputMode = 'generate' | 'manual';
 
@@ -246,6 +247,22 @@ const GenerateReport: React.FC = () => {
 
       await dbUtils.saveIRReport(savedReport);
       setGeneratedReport(savedReport);
+
+      // Também salva uma versão unificada EM (para o futuro template corporativo)
+      try {
+        const em = emFromIRReport(savedReport, {
+          reportNumber: savedReport.number,
+          client: savedReport.client || 'N/A',
+          site: savedReport.site || 'N/A',
+          tag: savedReport.tag,
+          responsible: { name: savedReport.operator || savedReport.responsible || 'N/A' },
+          observations: savedReport.observations || savedReport.notes,
+          recommendations: savedReport.recommendations,
+        });
+        await dbUtils.saveEMReport(em);
+      } catch (e) {
+        console.warn('Falha ao salvar EM (não bloqueante):', e);
+      }
       
       // Mostrar feedback
       showNotificationMessage('success', 'Relatório salvo com sucesso!');

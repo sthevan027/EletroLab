@@ -26,6 +26,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const otherItems = [
     { path: '/multiphase', label: 'Multi-Fase', icon: ChartBarIcon, color: 'text-gray-400' },
     { path: '/panel', label: 'Painel', icon: Squares2X2Icon, color: 'text-gray-400' },
+    { path: '/em-reports', label: 'Eletromecânico', icon: DocumentTextIcon, color: 'text-gray-400' },
     { path: '/reports', label: 'Relatórios', icon: DocumentTextIcon, color: 'text-gray-400' },
     { path: '/parameters', label: 'Parâmetros', icon: CogIcon, color: 'text-gray-400' },
     { path: '/equipment', label: 'Equipamentos', icon: CircleStackIcon, color: 'text-gray-400' },
