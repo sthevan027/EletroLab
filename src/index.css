@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 /* Tema escuro/cinza */
 body {
@@ -42,15 +41,15 @@ body {
 
 /* Texto com melhor contraste */
 .text-description {
-  @apply text-gray-300 !important;
+  @apply !text-gray-300;
 }
 
 .text-muted {
-  @apply text-gray-400 !important;
+  @apply !text-gray-400;
 }
 
 .text-subtitle {
-  @apply text-gray-300 !important;
+  @apply !text-gray-300;
 }
 
 /* Hover states */
@@ -167,7 +166,7 @@ body {
 
 /* Modal styles */
 .modal-overlay {
-  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+  @apply fixed inset-0 flex items-center justify-center z-50 bg-black/50;
 }
 
 .modal-content {
