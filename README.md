@@ -1,4 +1,4 @@
-# EletriLab - Gerador de Relatórios de Qualidade da Disciplina Elétrica
+# EletroLab - Gerador de Relatórios de Qualidade da Disciplina Elétrica
 
 Sistema para geração de relatórios de qualidade elétrica: Megger, Microhmímetro, Hipot, Lançamento de Cabo e Testes de Disjuntor. Suporta **entrada manual de valores** (dados reais do teste) e **cálculo automático** (simulação/estudo), com exportação em **PDF e Excel**.
 
