@@ -1,8 +1,16 @@
-# EletroLab - Gerador de Relatórios de Qualidade da Disciplina Elétrica
+# LaudoFácil — Laudos elétricos NR-10 / SPDA
 
 ![Status](https://img.shields.io/badge/status-em%20produ%C3%A7%C3%A3o-success)
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black) ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white) ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white) ![Chart.js](https://img.shields.io/badge/Chart.js-4-FF6384?logo=chartdotjs&logoColor=white) ![Firebase](https://img.shields.io/badge/Firebase-10-DD2C00?logo=firebase&logoColor=white)
+
+## 🚀 Evolução: de gerador de relatórios para emissor de laudos NR-10/SPDA
+
+**De → Para:** de ferramenta de cálculo elétrico para emissor de laudos normativos com gestão de clientes.
+
+**Novas funcionalidades:** fluxo guiado por tipo de ensaio com upload de fotos das não conformidades; geração de PDF padronizado com campos de ART e assinatura; cadastro de clientes e lembrete automático de renovação (1 a 3 anos).
+
+**Mudanças na lógica:** os cálculos viram etapa dentro de um fluxo de laudo (não telas isoladas); persistência dos laudos emitidos com versionamento por norma; agenda de validade e renovação por cliente.
 
 Sistema para geração de relatórios de qualidade elétrica: Megger, Microhmímetro, Hipot, Lançamento de Cabo e Testes de Disjuntor. Suporta **entrada manual de valores** (dados reais do teste) e **cálculo automático** (simulação/estudo), com exportação em **PDF e Excel**.
 
