@@ -932,3 +932,200 @@ export async function exportBreakerPDF(data: {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }).outputPdf('blob');
 }
+
+
+/**
+ * Exporta Laudo A4 Profissional com conformidade NR-10 / NBR 5410
+ */
+export async function exportA4ProfissionalPDF(
+  report: IRReport,
+  meta: {
+    empresa?: string;
+    crea?: string;
+    responsavel?: string;
+    logoUrl?: string;
+  } = {}
+): Promise<Blob> {
+  const html = generateA4ProfissionalHTML(report, meta);
+
+  return await html2pdf().from(html).set({
+    margin: [15, 15, 20, 15],
+    filename: `laudo_${report.category}_${report.tag || 'sem-tag'}_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+    pagebreak: { mode: ['avoid-all', 'css'] }
+  }).outputPdf('blob');
+}
+
+function generateA4ProfissionalHTML(
+  report: IRReport,
+  meta: { empresa?: string; crea?: string; responsavel?: string; logoUrl?: string }
+): string {
+  const empresa = meta.empresa || 'Nome da Empresa';
+  const responsavel = meta.responsavel || report.operator || 'Técnico Responsável';
+  const crea = meta.crea || '';
+  const dataBR = new Date().toLocaleDateString('pt-BR');
+  const tag = report.tag || '-';
+  const client = report.client || '-';
+  const site = report.site || '-';
+  const status = report.dai && parseFloat(report.dai) >= 1.3 ? 'APROVADO' : 'REPROVADO';
+  const statusColor = status === 'APROVADO' ? '#16a34a' : '#dc2626';
+
+  const readings = (report.readings || [])
+    .map(
+      (r, i) =>
+        `<tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">${String(i + 1).padStart(2, '0')}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">${r.time}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">${r.kv} kV</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-family:monospace;">${r.resistance}</td>
+        </tr>`
+    )
+    .join('');
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; background: #fff; }
+  .page { width: 100%; padding: 0; }
+  /* Cabeçalho */
+  .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #1e40af; padding-bottom: 12px; margin-bottom: 16px; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-box { width: 56px; height: 56px; border: 2px solid #1e40af; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #1e40af; font-size: 9px; font-weight: bold; text-align: center; }
+  .company-name { font-size: 16px; font-weight: bold; color: #1e40af; }
+  .company-sub { font-size: 10px; color: #6b7280; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .report-number { font-size: 13px; font-weight: bold; color: #1e40af; }
+  .report-date { font-size: 10px; color: #6b7280; margin-top: 3px; }
+  /* Norma badge */
+  .norm-bar { display: flex; gap: 8px; margin-bottom: 14px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 9px; font-weight: bold; letter-spacing: .5px; }
+  .badge-nr10 { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+  .badge-nbr { background: #eff6ff; color: #1e40af; border: 1px solid #93c5fd; }
+  /* Info grid */
+  .section-title { font-size: 10px; font-weight: bold; color: #1e40af; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; border-bottom: 1px solid #dbeafe; padding-bottom: 3px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .info-item label { font-size: 9px; color: #6b7280; display: block; }
+  .info-item span { font-size: 11px; font-weight: 600; }
+  /* Tabela */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+  thead tr { background: #1e40af; color: #fff; }
+  thead th { padding: 7px 10px; text-align: left; font-size: 10px; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  /* DAI */
+  .dai-box { display: flex; align-items: center; gap: 16px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; }
+  .dai-value { font-size: 22px; font-weight: bold; color: #1e40af; }
+  .dai-label { font-size: 10px; color: #6b7280; }
+  .status-badge { display: inline-block; padding: 5px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; color: #fff; margin-left: auto; }
+  /* NR-10 */
+  .norm-box { border-left: 4px solid #f59e0b; background: #fffbeb; padding: 10px 12px; margin-bottom: 14px; border-radius: 0 6px 6px 0; }
+  .norm-box strong { color: #92400e; }
+  .norm-box p { color: #78350f; font-size: 10px; margin-top: 4px; }
+  /* Assinatura */
+  .signature-section { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 24px; padding-top: 14px; border-top: 1px solid #e5e7eb; }
+  .sig-block { text-align: center; }
+  .sig-line { border-top: 1px solid #374151; margin-bottom: 5px; }
+  .sig-name { font-size: 10px; font-weight: bold; }
+  .sig-role { font-size: 9px; color: #6b7280; }
+  .footer { margin-top: 20px; text-align: center; font-size: 9px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Cabeçalho -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-box">LOGO</div>
+      <div>
+        <div class="company-name">${empresa}</div>
+        <div class="company-sub">Ensaios e Laudos Elétricos</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="report-number">LAUDO Nº ${report.id?.slice(-6)?.toUpperCase() || 'N/A'}</div>
+      <div class="report-date">Data: ${dataBR}</div>
+    </div>
+  </div>
+
+  <!-- Badges de norma -->
+  <div class="norm-bar">
+    <span class="badge badge-nr10">NR-10 — Segurança em Instalações Elétricas</span>
+    <span class="badge badge-nbr">NBR 5410 — Instalações de Baixa Tensão</span>
+  </div>
+
+  <!-- Dados do ensaio -->
+  <div class="section-title">Identificação do Equipamento</div>
+  <div class="info-grid">
+    <div class="info-item"><label>TAG / Equipamento</label><span>${tag}</span></div>
+    <div class="info-item"><label>Cliente</label><span>${client}</span></div>
+    <div class="info-item"><label>Local / Planta</label><span>${site}</span></div>
+    <div class="info-item"><label>Categoria</label><span>${report.category}</span></div>
+    <div class="info-item"><label>Tensão de Ensaio</label><span>${(report.readings?.[0]?.kv ?? '-')} kV</span></div>
+    <div class="info-item"><label>Técnico Responsável</label><span>${responsavel}${crea ? ' — CREA ' + crea : ''}</span></div>
+  </div>
+
+  <!-- Leituras -->
+  <div class="section-title">Leituras de Resistência de Isolamento</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Tempo</th>
+        <th>Tensão</th>
+        <th>Resistência</th>
+      </tr>
+    </thead>
+    <tbody>${readings}</tbody>
+  </table>
+
+  <!-- DAI e Status -->
+  <div class="dai-box">
+    <div>
+      <div class="dai-label">Índice de Absorção (DAI)</div>
+      <div class="dai-value">${report.dai}</div>
+    </div>
+    <div style="padding-left:14px;border-left:1px solid #e5e7eb;">
+      <div class="dai-label">Critério: DAI ≥ 1,3 (Aprovado)</div>
+      <div style="font-size:11px;color:#374151;margin-top:2px;">Conforme NBR 5460 / IEEE 43</div>
+    </div>
+    <div class="status-badge" style="background:${statusColor};">${status}</div>
+  </div>
+
+  <!-- NR-10 -->
+  <div class="norm-box">
+    <strong>Conformidade NR-10 — Segurança em Instalações e Serviços em Eletricidade</strong>
+    <p>
+      Este laudo foi elaborado por profissional habilitado conforme exigência da NR-10 (Portaria MTE 598/2004 e atualizações).
+      Os ensaios de resistência de isolamento atendem ao item 10.8.2 da norma, que estabelece a obrigatoriedade
+      de verificação periódica das condições de isolação em instalações elétricas. Equipamentos de proteção
+      individual e coletiva foram utilizados durante a execução do ensaio.
+    </p>
+  </div>
+
+  <!-- Assinatura -->
+  <div class="signature-section">
+    <div class="sig-block">
+      <div style="height:40px;"></div>
+      <div class="sig-line"></div>
+      <div class="sig-name">${responsavel}</div>
+      <div class="sig-role">Técnico Responsável${crea ? ' — CREA ' + crea : ''}</div>
+    </div>
+    <div class="sig-block">
+      <div style="height:40px;"></div>
+      <div class="sig-line"></div>
+      <div class="sig-name">Cliente / Responsável</div>
+      <div class="sig-role">Aprovação do Laudo</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Documento gerado pelo EletriLab · ${dataBR} · Este laudo é válido apenas com assinatura e carimbo do responsável técnico.
+  </div>
+</div>
+</body>
+</html>`;
+}
