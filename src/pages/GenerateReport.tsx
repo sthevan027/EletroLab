@@ -20,7 +20,7 @@ import { generateIRSeries } from '../utils/generator';
 import { validateIRReport, validatePhysicalCableInputs } from '../utils/validation';
 import { calculateHybridResistance, formatResistance as physicsFormatResistance } from '../utils/physics';
 
-import { exportCupomPDF } from '../utils/export';
+import { exportCupomPDF, exportA4ProfissionalPDF } from '../utils/export';
 import { exportMeggerExcel } from '../utils/export-excel';
 import { dbUtils } from '../db/database';
 import { calculateDAI, formatVoltage } from '../utils/units';
@@ -295,6 +295,28 @@ const GenerateReport: React.FC = () => {
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
       setValidationErrors(['Erro ao exportar relatório']);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportA4Report = async () => {
+    if (!generatedReport) return;
+    try {
+      setExporting(true);
+      const blob = await exportA4ProfissionalPDF(generatedReport);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `laudo_a4_${generatedReport.category}_${generatedReport.tag || 'sem-tag'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showNotificationMessage('success', 'Laudo A4 exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar laudo A4:', error);
+      showNotificationMessage('error', 'Erro ao exportar laudo A4');
     } finally {
       setExporting(false);
     }
@@ -929,6 +951,19 @@ const GenerateReport: React.FC = () => {
                     <ArrowDownTrayIcon className="w-4 h-4" />
                     Exportar Excel
                   </button>
+
+                  <button
+                    onClick={exportA4Report}
+                    disabled={exporting}
+                    className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold bg-amber-700 hover:bg-amber-600 text-white border border-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    title="Laudo profissional A4 com conformidade NR-10"
+                  >
+                    {exporting ? (
+                      <><ArrowPathIcon className="w-4 h-4 animate-spin" /> Exportando...</>
+                    ) : (
+                      <><DocumentTextIcon className="w-4 h-4" /> Laudo A4 (NR-10)</>
+                    )}
+                  </button>
                 </div>
               </div>
             )}
@@ -939,6 +974,7 @@ const GenerateReport: React.FC = () => {
 };
 
 export default GenerateReport;
+
 
 
 

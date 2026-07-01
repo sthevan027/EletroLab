@@ -86,7 +86,7 @@ const MultiPhase: React.FC = () => {
 
   const removePhase = (index: number) => {
     if (phaseNames.length <= 2) {
-      alert('Deve ter pelo menos 2 fases');
+      showNotificationMessage('error', 'Deve ter pelo menos 2 fases');
       return;
     }
 

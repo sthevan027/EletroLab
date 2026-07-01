@@ -28,3 +28,10 @@ setTimeout(async () => {
     console.error('Erro ao inicializar EletriLab:', error)
   }
 }, 100)
+
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
